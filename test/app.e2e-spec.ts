@@ -766,26 +766,226 @@ describe('AppController (e2e)', () => {
       });
     });
 
-    /*
-
-    // below tests are just my notes, not actual tests that could be uncommented and ran.
-
     describe('/ (GET)', () => {
-      describe('with nothing stored in database', () => {
+      describe('with database that is empty', () => {
         describe('with database available', () => {
-          it('should 200 and return empty array', () => {
-            return request(app!.getHttpServer())
-              .get('/documents')
-              .expect(200)
-              .expect([]);
+          describe('for request that is correct', () => {
+            it('should 200, not alter database and return empty array', async () => {
+              await request(app!.getHttpServer())
+                .get('/documents')
+                .expect(200)
+                .expect([]);
+
+              const documentsRepository = dataSource!.getRepository(Document);
+              await expect(documentsRepository.find()).resolves.toStrictEqual(
+                [],
+              );
+
+              await expect(
+                readdir(constants.databaseDocumentsDir),
+              ).resolves.toStrictEqual([]);
+            });
+          });
+        });
+
+        describe('with database not available', () => {
+          beforeEach(async () => {
+            await dataSource!.destroy();
+          });
+
+          describe('for request that is correct', () => {
+            it('should 500 and return message that explains error cause', () => {
+              return request(app!.getHttpServer())
+                .get('/documents')
+                .expect(500)
+                .expect({
+                  message:
+                    'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+                  error: 'Internal Server Error',
+                  statusCode: 500,
+                });
+            });
+
+            it('should 500 and not alter SQL database', async () => {
+              await request(app!.getHttpServer()).get('/documents').expect(500);
+
+              expect(dataSource!.isInitialized).toBeFalsy();
+              dataSource = await utils.newDataSource(constants.databasePath);
+              expect(dataSource!.isInitialized).toBeTruthy();
+
+              const documentsRepository = dataSource!.getRepository(Document);
+              await expect(documentsRepository.find()).resolves.toStrictEqual(
+                [],
+              );
+            });
+
+            it('should 500 and not alter database folder with uploaded files', async () => {
+              await request(app!.getHttpServer()).get('/documents').expect(500);
+
+              await expect(
+                readdir(constants.databaseDocumentsDir),
+              ).resolves.toStrictEqual([]);
+            });
           });
         });
       });
 
-      describe('with two documents stored in database', () => {
-        // TODO
+      describe('with database that already stores two documents', () => {
+        beforeEach(async () => {
+          fixtures.firstDocument.name = 'first-uploaded-file.pdf';
+          fixtures.firstDocument.path = constants.testDocument.pdf.path;
+          fixtures.firstDocument.keys = 'first-file-keys';
+
+          await request(app!.getHttpServer())
+            .post('/documents')
+            .attach('file', fixtures.firstDocument.path)
+            .field('name', fixtures.firstDocument.name)
+            .field('keys', fixtures.firstDocument.keys)
+            .expect(201)
+            .expect({});
+
+          fixtures.secondDocument.name = 'second-uploaded-file.pdf';
+          fixtures.secondDocument.path = constants.testDocument.markdown.path;
+          fixtures.secondDocument.keys = 'second-file-keys';
+
+          await request(app!.getHttpServer())
+            .post('/documents')
+            .attach('file', fixtures.secondDocument.path)
+            .field('name', fixtures.secondDocument.name)
+            .field('keys', fixtures.secondDocument.keys)
+            .expect(201)
+            .expect({});
+        });
+
+        describe('with database available', () => {
+          describe('for request that is correct', () => {
+            it('should 200, not alter database and return list of documents', async () => {
+              await request(app!.getHttpServer())
+                .get('/documents')
+                .expect(200)
+                .expect([
+                  {
+                    id: 1,
+                    name: fixtures.firstDocument.name,
+                    keys: fixtures.firstDocument.keys,
+                  },
+                  {
+                    id: 2,
+                    name: fixtures.secondDocument.name,
+                    keys: fixtures.secondDocument.keys,
+                  },
+                ]);
+
+              const documentsRepository = dataSource!.getRepository(Document);
+              await expect(documentsRepository.find()).resolves.toStrictEqual([
+                utils.newDocument(
+                  1,
+                  fixtures.firstDocument.name!,
+                  fixtures.firstDocument.keys!,
+                ),
+                utils.newDocument(
+                  2,
+                  fixtures.secondDocument.name!,
+                  fixtures.secondDocument.keys!,
+                ),
+              ]);
+
+              await expect(
+                readdir(constants.databaseDocumentsDir),
+              ).resolves.toStrictEqual([
+                fixtures.firstDocument.name,
+                fixtures.secondDocument.name,
+              ]);
+
+              await expect(
+                utils.filesEqual(
+                  fixtures.firstDocument.path!,
+                  `${constants.databaseDocumentsDir}/${fixtures.firstDocument.name}`,
+                ),
+              ).resolves.toBeTruthy();
+
+              await expect(
+                utils.filesEqual(
+                  fixtures.secondDocument.path!,
+                  `${constants.databaseDocumentsDir}/${fixtures.secondDocument.name}`,
+                ),
+              ).resolves.toBeTruthy();
+            });
+          });
+        });
+
+        describe('with database not available', () => {
+          beforeEach(async () => {
+            await dataSource!.destroy();
+          });
+
+          describe('for request that is correct', () => {
+            it('should 500 and return that explains error cause', () => {
+              return request(app!.getHttpServer())
+                .get('/documents')
+                .expect(500)
+                .expect({
+                  message:
+                    'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+                  error: 'Internal Server Error',
+                  statusCode: 500,
+                });
+            });
+
+            it('should 500 and not alter SQL database', async () => {
+              await request(app!.getHttpServer()).get('/documents').expect(500);
+
+              expect(dataSource!.isInitialized).toBeFalsy();
+              dataSource = await utils.newDataSource(constants.databasePath);
+              expect(dataSource!.isInitialized).toBeTruthy();
+
+              const documentsRepository = dataSource!.getRepository(Document);
+              await expect(documentsRepository.find()).resolves.toStrictEqual([
+                utils.newDocument(
+                  1,
+                  fixtures.firstDocument.name!,
+                  fixtures.firstDocument.keys!,
+                ),
+                utils.newDocument(
+                  2,
+                  fixtures.secondDocument.name!,
+                  fixtures.secondDocument.keys!,
+                ),
+              ]);
+            });
+
+            it('should 500 and not alter database folder with uploaded files', async () => {
+              await request(app!.getHttpServer()).get('/documents').expect(500);
+
+              await expect(
+                readdir(constants.databaseDocumentsDir),
+              ).resolves.toStrictEqual([
+                fixtures.firstDocument.name,
+                fixtures.secondDocument.name,
+              ]);
+
+              await expect(
+                utils.filesEqual(
+                  fixtures.firstDocument.path!,
+                  `${constants.databaseDocumentsDir}/${fixtures.firstDocument.name}`,
+                ),
+              ).resolves.toBeTruthy();
+
+              await expect(
+                utils.filesEqual(
+                  fixtures.secondDocument.path!,
+                  `${constants.databaseDocumentsDir}/${fixtures.secondDocument.name}`,
+                ),
+              ).resolves.toBeTruthy();
+            });
+          });
+        });
       });
     });
+
+    /*
+
+    // below tests are just my notes, not actual tests that could be uncommented and ran.
 
     describe('/:id (GET)', () => {
       describe('with nothing stored in database', () => {

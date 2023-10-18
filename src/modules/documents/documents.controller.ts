@@ -68,7 +68,15 @@ export class DocumentsController {
 
   @Get()
   async findAll() {
-    return await this.documentService.findAll();
+    try {
+      return await this.documentService.findAll();
+    } catch (error) {
+      // TODO: add { cause: error } for debugging
+      // https://docs.nestjs.com/exception-filters
+      throw new InternalServerErrorException(
+        'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+      );
+    }
   }
 
   @Get(':id')
