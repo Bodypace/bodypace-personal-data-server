@@ -153,7 +153,11 @@ describe('DocumentsController', () => {
       fixtures.uploadedFile = await mockedUploadedFile();
 
       await expect(
-        controller.create(fixtures.body, fixtures.uploadedFile),
+        controller.create(
+          fixtures.body,
+          fixtures.uploadedFile,
+          'multipart/form-data; boundary=',
+        ),
       ).resolves.toStrictEqual(mocks.documentsService.create);
 
       expect(documentsService.create).toHaveBeenCalledTimes(1);
