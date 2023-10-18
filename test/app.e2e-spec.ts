@@ -731,31 +731,44 @@ describe('AppController (e2e)', () => {
       });
     });
 
-    /*
-
-    // below tests are just my notes, not actual tests that could be uncommented and ran.
-
     describe('/:id (POST)', () => {
-      describe('for correct document', () => {
-        it('should 404', () => {
-          fixtures.firstDocument.name = 'my-uploaded-file.pdf';
-          fixtures.firstDocument.path = constants.testDocument.pdf.path;
-          fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
+      describe('with database that is empty', () => {
+        describe('with database available', () => {
+          describe('for request that is correct', () => {
+            it('should 404, not alter database and return message that explains error cause ', async () => {
+              fixtures.firstDocument.name = 'my-uploaded-file.pdf';
+              fixtures.firstDocument.path = constants.testDocument.pdf.path;
+              fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
 
-          return request(app!.getHttpServer())
-            .post('/documents/1')
-            .attach('file', fixtures.firstDocument.path)
-            .field('name', fixtures.firstDocument.name)
-            .field('keys', fixtures.firstDocument.keys)
-            .expect(404)
-            .expect({
-              message: 'Cannot POST /documents/1',
-              error: 'Not Found',
-              statusCode: 404,
+              await request(app!.getHttpServer())
+                .post('/documents/1')
+                .attach('file', fixtures.firstDocument.path)
+                .field('name', fixtures.firstDocument.name)
+                .field('keys', fixtures.firstDocument.keys)
+                .expect(404)
+                .expect({
+                  message: 'Cannot POST /documents/1',
+                  error: 'Not Found',
+                  statusCode: 404,
+                });
+
+              const documentsRepository = dataSource!.getRepository(Document);
+              await expect(documentsRepository.find()).resolves.toStrictEqual(
+                [],
+              );
+
+              await expect(
+                readdir(constants.databaseDocumentsDir),
+              ).resolves.toStrictEqual([]);
             });
+          });
         });
       });
     });
+
+    /*
+
+    // below tests are just my notes, not actual tests that could be uncommented and ran.
 
     describe('/ (GET)', () => {
       describe('with nothing stored in database', () => {
