@@ -14,6 +14,8 @@ import {
   Headers,
   ValidationPipe,
   BadRequestException,
+  NotFoundException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -81,10 +83,20 @@ export class DocumentsController {
 
   @Get(':id')
   async findOne(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: string,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile | void> {
-    const document = await this.documentService.findOne(+id);
+    let document;
+    try {
+      document = await this.documentService.findOne(+id);
+    } catch (error) {
+      // TODO: add { cause: error } for debugging
+      // https://docs.nestjs.com/exception-filters
+      throw new InternalServerErrorException(
+        'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+      );
+    }
+
     if (document) {
       res.set({
         'Content-Disposition': `attachment; filename="${document.name}"`,
@@ -94,6 +106,7 @@ export class DocumentsController {
       );
       return new StreamableFile(file);
     }
+    throw new NotFoundException();
   }
 
   @Delete(':id')

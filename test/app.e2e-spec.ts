@@ -5,7 +5,8 @@ import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
 import { Document } from '../src/modules/documents/entities/document.entity';
 import { rm, mkdir, writeFile, readdir } from 'node:fs/promises';
-import utils from './utils';
+import utils, { expectDatabaseWasNotAltered } from './utils';
+import type { TestFixtures } from './utils';
 
 const constants = {
   databaseDir: 'database',
@@ -30,28 +31,12 @@ const constants = {
   },
 };
 
-interface Fixtures {
-  firstDocument: {
-    id?: number;
-    name?: string;
-    path?: string;
-    keys?: string;
-  };
-  secondDocument: {
-    id?: number;
-    name?: string;
-    path?: string;
-    keys?: string;
-  };
-  uploadedFile?: Express.Multer.File;
-}
-
 interface Helpers {
   expectDatabaseWasNotAltered?: () => Promise<void>;
 }
 
 describe('AppController (e2e)', () => {
-  const fixtures: Fixtures = {
+  const fixtures: TestFixtures = {
     firstDocument: {},
     secondDocument: {},
   };
@@ -983,21 +968,244 @@ describe('AppController (e2e)', () => {
       });
     });
 
-    /*
-
-    // below tests are just my notes, not actual tests that could be uncommented and ran.
-
     describe('/:id (GET)', () => {
-      describe('with nothing stored in database', () => {
-        describe('with database available', () => {
-          describe('for unknown document id', () => {
-            it('should 200 and return nothing', () => {
-              fixtures.firstDocument.id = 43;
+      describe('with database that already stores two documents', () => {
+        beforeEach(async () => {
+          fixtures.firstDocument.name = 'first-uploaded-file.pdf';
+          fixtures.firstDocument.path = constants.testDocument.pdf.path;
+          fixtures.firstDocument.keys = 'first-file-keys';
 
-              return request(app!.getHttpServer())
-                .get(`/documents/${fixtures.firstDocument.id}`)
-                .expect(200)
-                .expect({});
+          await request(app!.getHttpServer())
+            .post('/documents')
+            .attach('file', fixtures.firstDocument.path)
+            .field('name', fixtures.firstDocument.name)
+            .field('keys', fixtures.firstDocument.keys)
+            .expect(201)
+            .expect({});
+
+          fixtures.secondDocument.name = 'second-uploaded-file.pdf';
+          fixtures.secondDocument.path = constants.testDocument.markdown.path;
+          fixtures.secondDocument.keys = 'second-file-keys';
+
+          await request(app!.getHttpServer())
+            .post('/documents')
+            .attach('file', fixtures.secondDocument.path)
+            .field('name', fixtures.secondDocument.name)
+            .field('keys', fixtures.secondDocument.keys)
+            .expect(201)
+            .expect({});
+        });
+
+        describe('with database available', () => {
+          describe.each([
+            ['correct (first document id - 1)', 1],
+            ['correct technically (first document id - 001)', '001'],
+            ['correct (second document id - 2)', 2],
+          ])('for request that is %s', (_, correctDocumentId) => {
+            it('should 200, not alter database and download document', async () => {
+              let data = '';
+              const response = await request(app!.getHttpServer())
+                .get(`/documents/${correctDocumentId}`)
+                .buffer()
+                .parse((res, callback) => {
+                  res.setEncoding('binary');
+                  data = '';
+                  res.on('data', (chunk) => {
+                    data += chunk;
+                  });
+                  res.on('end', () => {
+                    callback(null, Buffer.from(data, 'binary'));
+                  });
+                });
+
+              expect(response.statusCode).toBe(200);
+
+              const document =
+                Number(correctDocumentId) === 1
+                  ? fixtures.firstDocument
+                  : fixtures.secondDocument;
+
+              await expect(
+                utils.fileEquals(
+                  `${constants.databaseDocumentsDir}/${document.name}`,
+                  response.body,
+                ),
+              ).resolves.toBeTruthy();
+
+              await expectDatabaseWasNotAltered(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                [fixtures.firstDocument, fixtures.secondDocument],
+                true,
+                dataSource!,
+              );
+            });
+          });
+        });
+
+        describe('with database not available', () => {
+          beforeEach(async () => {
+            await dataSource!.destroy();
+          });
+
+          describe.each([
+            ['correct (first document id - 1)', 1],
+            ['correct technically (first document id - 001)', '001'],
+            ['correct (second document id - 2)', 2],
+          ])('for request that is %s', (_, correctDocumentId) => {
+            it('should 500, not alter database and return message that explains error cause', async () => {
+              await request(app!.getHttpServer())
+                .get(`/documents/${correctDocumentId}`)
+                .expect(500)
+                .expect({
+                  message:
+                    'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+                  error: 'Internal Server Error',
+                  statusCode: 500,
+                });
+
+              await expectDatabaseWasNotAltered(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                [fixtures.firstDocument, fixtures.secondDocument],
+                false,
+                dataSource!,
+              );
+            });
+          });
+        });
+      });
+
+      describe.each([
+        ['that is empty', false],
+        ['that already stores two documents', true],
+      ])('with database %s', (_, databaseShouldContainDocuments: boolean) => {
+        beforeEach(async () => {
+          if (databaseShouldContainDocuments) {
+            fixtures.firstDocument.name = 'first-uploaded-file.pdf';
+            fixtures.firstDocument.path = constants.testDocument.pdf.path;
+            fixtures.firstDocument.keys = 'first-file-keys';
+
+            await request(app!.getHttpServer())
+              .post('/documents')
+              .attach('file', fixtures.firstDocument.path)
+              .field('name', fixtures.firstDocument.name)
+              .field('keys', fixtures.firstDocument.keys)
+              .expect(201)
+              .expect({});
+
+            fixtures.secondDocument.name = 'second-uploaded-file.pdf';
+            fixtures.secondDocument.path = constants.testDocument.markdown.path;
+            fixtures.secondDocument.keys = 'second-file-keys';
+
+            await request(app!.getHttpServer())
+              .post('/documents')
+              .attach('file', fixtures.secondDocument.path)
+              .field('name', fixtures.secondDocument.name)
+              .field('keys', fixtures.secondDocument.keys)
+              .expect(201)
+              .expect({});
+          }
+        });
+
+        describe('with database available', () => {
+          describe.each([
+            ['unknown id', 3],
+            ['negative number id', -1],
+            ['0 as id (we count from 1)', 0],
+          ])('for request with %s', (_, incorrectId) => {
+            it('should 404, not alter database and return "404 Not Found" response', async () => {
+              await request(app!.getHttpServer())
+                .get(`/documents/${incorrectId}`)
+                .expect(404)
+                .expect({
+                  message: 'Not Found',
+                  statusCode: 404,
+                });
+
+              await expectDatabaseWasNotAltered(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                databaseShouldContainDocuments
+                  ? [fixtures.firstDocument, fixtures.secondDocument]
+                  : [],
+                true,
+                dataSource!,
+              );
+            });
+          });
+        });
+
+        describe('with database not available', () => {
+          beforeEach(async () => {
+            await dataSource!.destroy();
+          });
+
+          describe.each([
+            ['unknown id', 3],
+            ['negative number id', -1],
+            ['0 as id (we count from 1)', 0],
+          ])('for request with %s', (_, incorrectId) => {
+            it('should 500, not alter database and return message that explains error cause', async () => {
+              await request(app!.getHttpServer())
+                .get(`/documents/${incorrectId}`)
+                .expect(500)
+                .expect({
+                  message:
+                    'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+                  error: 'Internal Server Error',
+                  statusCode: 500,
+                });
+
+              await expectDatabaseWasNotAltered(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                databaseShouldContainDocuments
+                  ? [fixtures.firstDocument, fixtures.secondDocument]
+                  : [],
+                false,
+                dataSource!,
+              );
+            });
+          });
+        });
+
+        describe.each([
+          ['available', true],
+          ['not available', false],
+        ])('with database %s', (_, databaseShouldBeAvailable: boolean) => {
+          beforeEach(async () => {
+            if (!databaseShouldBeAvailable) {
+              await dataSource!.destroy();
+            }
+          });
+
+          describe.each([
+            ['string as id', 'A'],
+            ['floating point number as id (1.0)', '1.0'],
+            ['floating point number as id (1.1)', '1.1'],
+            ['floating point number as id (3.0)', '3.0'],
+          ])('for request with %s', (_, incorrectId) => {
+            it('should 400, not alter database and return message that explains error cause', async () => {
+              await request(app!.getHttpServer())
+                .get(`/documents/${incorrectId}`)
+                .expect(400)
+                .expect({
+                  // TODO: message could be more descriptive by explicitly stating that we mean :id param in URL
+                  message: 'Validation failed (numeric string is expected)',
+                  error: 'Bad Request',
+                  statusCode: 400,
+                });
+
+              await expectDatabaseWasNotAltered(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                databaseShouldContainDocuments
+                  ? [fixtures.firstDocument, fixtures.secondDocument]
+                  : [],
+                databaseShouldBeAvailable,
+                dataSource!,
+              );
             });
           });
         });
@@ -1008,6 +1216,10 @@ describe('AppController (e2e)', () => {
     // TODO: test that /:id (UPDATE) does not work
     // TODO: test that / (PATCH) does not work
     // TODO: test that /:id (PATCH) does not work
+
+    /*
+
+    // below tests are just my notes, not actual tests that could be uncommented and ran.
 
     describe('/ (DELETE)', () => {
       it('should 404', () => {

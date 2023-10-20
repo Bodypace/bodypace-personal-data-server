@@ -6,7 +6,7 @@ import { Document } from './entities/document.entity';
 import { readFile, copyFile, unlink, rm, mkdir } from 'node:fs/promises';
 import type { Response } from 'express';
 import { createReadStream } from 'node:fs';
-import { StreamableFile } from '@nestjs/common';
+import { NotFoundException, StreamableFile } from '@nestjs/common';
 
 interface Constants {
   databasePath: string;
@@ -224,7 +224,7 @@ describe('DocumentsController', () => {
     });
 
     describe('for unknown document id', () => {
-      it('should call documentsService#findOne() with received data and for null response do nothing (return undefined)', async () => {
+      it('should call documentsService#findOne() with received data and for null response throw NotFoundException (404)', async () => {
         fixtures.documentId = mocks.incorrectDocumentid;
         const res = {
           set: jest.fn(),
@@ -232,7 +232,7 @@ describe('DocumentsController', () => {
 
         await expect(
           controller.findOne(String(fixtures.documentId), res),
-        ).resolves.toBeUndefined();
+        ).rejects.toThrow(NotFoundException);
 
         expect(res.set).toHaveBeenCalledTimes(0);
 

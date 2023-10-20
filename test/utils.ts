@@ -1,6 +1,7 @@
 import { Document } from '../src/modules/documents/entities/document.entity';
 import { readFile } from 'node:fs/promises';
 import { DataSource } from 'typeorm';
+import { readdir } from 'node:fs/promises';
 
 export function newDocument(
   id: Document['id'],
@@ -23,6 +24,14 @@ export async function filesEqual(
   return Buffer.compare(file_1, file_2) === 0;
 }
 
+export async function fileEquals(
+  filePath: string,
+  buffer: Buffer,
+): Promise<boolean> {
+  const file: Buffer = await readFile(filePath);
+  return Buffer.compare(file, buffer) === 0;
+}
+
 export async function newDataSource(path: string): Promise<DataSource> {
   const dataSource = new DataSource({
     type: 'sqlite',
@@ -34,8 +43,58 @@ export async function newDataSource(path: string): Promise<DataSource> {
   return dataSource;
 }
 
+export interface TestDocument {
+  id?: number;
+  name?: string;
+  path?: string;
+  keys?: string;
+}
+
+export interface TestFixtures {
+  firstDocument: TestDocument;
+  secondDocument: TestDocument;
+  uploadedFile?: Express.Multer.File;
+}
+
+export async function expectDatabaseWasNotAltered(
+  databasePath: string,
+  databaseDocumentsDir: string,
+  databaseShouldContain: TestDocument[],
+  databaseShouldBeAvailable: boolean,
+  dataSource: DataSource,
+) {
+  let availableDataSource = dataSource;
+  if (!databaseShouldBeAvailable) {
+    expect(dataSource.isInitialized).toBeFalsy();
+    availableDataSource = await newDataSource(databasePath);
+  }
+  expect(availableDataSource.isInitialized).toBeTruthy();
+
+  const documentsRepository = availableDataSource.getRepository(Document);
+  await expect(documentsRepository.find()).resolves.toStrictEqual(
+    databaseShouldContain.map((testDocument, i) =>
+      newDocument(i + 1, testDocument.name!, testDocument.keys!),
+    ),
+  );
+
+  await expect(readdir(databaseDocumentsDir)).resolves.toStrictEqual(
+    databaseShouldContain.map((testDocument) => testDocument.name),
+  );
+
+  for (const testDocument of databaseShouldContain) {
+    await expect(
+      filesEqual(
+        testDocument.path!,
+        `${databaseDocumentsDir}/${testDocument.name}`,
+      ),
+    ).resolves.toBeTruthy();
+  }
+}
+
 export default {
   newDocument,
   filesEqual,
+  fileEquals,
   newDataSource,
+  expectDatabaseWasNotAltered,
 };
