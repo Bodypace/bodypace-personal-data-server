@@ -5,7 +5,7 @@ import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
 import { Document } from '../src/modules/documents/entities/document.entity';
 import { rm, mkdir, writeFile, readdir } from 'node:fs/promises';
-import utils, { expectDatabaseWasNotAltered } from './utils';
+import utils, { expectDatabaseDocumentsState } from './utils';
 import type { TestFixtures } from './utils';
 
 const constants = {
@@ -971,6 +971,7 @@ describe('AppController (e2e)', () => {
     describe('/:id (GET)', () => {
       describe('with database that already stores two documents', () => {
         beforeEach(async () => {
+          fixtures.firstDocument.id = 1;
           fixtures.firstDocument.name = 'first-uploaded-file.pdf';
           fixtures.firstDocument.path = constants.testDocument.pdf.path;
           fixtures.firstDocument.keys = 'first-file-keys';
@@ -983,6 +984,7 @@ describe('AppController (e2e)', () => {
             .expect(201)
             .expect({});
 
+          fixtures.secondDocument.id = 2;
           fixtures.secondDocument.name = 'second-uploaded-file.pdf';
           fixtures.secondDocument.path = constants.testDocument.markdown.path;
           fixtures.secondDocument.keys = 'second-file-keys';
@@ -1032,7 +1034,7 @@ describe('AppController (e2e)', () => {
                 ),
               ).resolves.toBeTruthy();
 
-              await expectDatabaseWasNotAltered(
+              await expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 [fixtures.firstDocument, fixtures.secondDocument],
@@ -1064,7 +1066,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 500,
                 });
 
-              await expectDatabaseWasNotAltered(
+              await expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 [fixtures.firstDocument, fixtures.secondDocument],
@@ -1082,6 +1084,7 @@ describe('AppController (e2e)', () => {
       ])('with database %s', (_, databaseShouldContainDocuments: boolean) => {
         beforeEach(async () => {
           if (databaseShouldContainDocuments) {
+            fixtures.firstDocument.id = 1;
             fixtures.firstDocument.name = 'first-uploaded-file.pdf';
             fixtures.firstDocument.path = constants.testDocument.pdf.path;
             fixtures.firstDocument.keys = 'first-file-keys';
@@ -1094,6 +1097,7 @@ describe('AppController (e2e)', () => {
               .expect(201)
               .expect({});
 
+            fixtures.secondDocument.id = 2;
             fixtures.secondDocument.name = 'second-uploaded-file.pdf';
             fixtures.secondDocument.path = constants.testDocument.markdown.path;
             fixtures.secondDocument.keys = 'second-file-keys';
@@ -1123,7 +1127,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 404,
                 });
 
-              await expectDatabaseWasNotAltered(
+              await expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 databaseShouldContainDocuments
@@ -1157,7 +1161,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 500,
                 });
 
-              await expectDatabaseWasNotAltered(
+              await expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 databaseShouldContainDocuments
@@ -1197,7 +1201,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 400,
                 });
 
-              await expectDatabaseWasNotAltered(
+              await expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 databaseShouldContainDocuments
@@ -1224,6 +1228,7 @@ describe('AppController (e2e)', () => {
       ])('with database %s', (_, databaseShouldContainDocuments: boolean) => {
         beforeEach(async () => {
           if (databaseShouldContainDocuments) {
+            fixtures.firstDocument.id = 1;
             fixtures.firstDocument.name = 'first-uploaded-file.pdf';
             fixtures.firstDocument.path = constants.testDocument.pdf.path;
             fixtures.firstDocument.keys = 'first-file-keys';
@@ -1236,6 +1241,7 @@ describe('AppController (e2e)', () => {
               .expect(201)
               .expect({});
 
+            fixtures.secondDocument.id = 2;
             fixtures.secondDocument.name = 'second-uploaded-file.pdf';
             fixtures.secondDocument.path = constants.testDocument.markdown.path;
             fixtures.secondDocument.keys = 'second-file-keys';
@@ -1272,7 +1278,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 404,
                 });
 
-              await expectDatabaseWasNotAltered(
+              await expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 databaseShouldContainDocuments
@@ -1287,21 +1293,133 @@ describe('AppController (e2e)', () => {
       });
     });
 
-    /*
-
-    // below tests are just my notes, not actual tests that could be uncommented and ran.
-
     describe('/:id (DELETE)', () => {
-      describe('with nothing stored in database', () => {
-        describe('with database available', () => {
-          describe('for unknown document id', () => {
-            it('asd', () => {
-              // TODO
-            });
+      // TODO: all correct responses should use code 204, not 200
+      // https://stackoverflow.com/questions/2342579/http-status-code-for-update-and-delete
+      // NOTE: for other endpoints if those do not return data no 200, 204 should probably be used aswell.
+
+      describe.each([
+        ['that is empty', false],
+        ['that already stores two documents', true],
+      ])('with database %s', (_, databaseShouldContainDocuments: boolean) => {
+        beforeEach(async () => {
+          if (databaseShouldContainDocuments) {
+            fixtures.firstDocument.id = 1;
+            fixtures.firstDocument.name = 'first-uploaded-file.pdf';
+            fixtures.firstDocument.path = constants.testDocument.pdf.path;
+            fixtures.firstDocument.keys = 'first-file-keys';
+
+            await request(app!.getHttpServer())
+              .post('/documents')
+              .attach('file', fixtures.firstDocument.path)
+              .field('name', fixtures.firstDocument.name)
+              .field('keys', fixtures.firstDocument.keys)
+              .expect(201)
+              .expect({});
+
+            fixtures.secondDocument.id = 2;
+            fixtures.secondDocument.name = 'second-uploaded-file.pdf';
+            fixtures.secondDocument.path = constants.testDocument.markdown.path;
+            fixtures.secondDocument.keys = 'second-file-keys';
+
+            await request(app!.getHttpServer())
+              .post('/documents')
+              .attach('file', fixtures.secondDocument.path)
+              .field('name', fixtures.secondDocument.name)
+              .field('keys', fixtures.secondDocument.keys)
+              .expect(201)
+              .expect({});
+          }
+        });
+
+        describe.each([
+          ['available', true],
+          ['not available', false],
+        ])('with database %s', (_, databaseShouldBeAvailable: boolean) => {
+          beforeEach(async () => {
+            if (!databaseShouldBeAvailable) {
+              await dataSource!.destroy();
+            }
           });
+
+          if (databaseShouldBeAvailable) {
+            if (databaseShouldContainDocuments) {
+              describe.each([[1], [2]])(
+                'for request with known document id (%s)',
+                (documentId) => {
+                  it('should 200, remove only mentioned document from database and return nothing', async () => {
+                    await request(app!.getHttpServer())
+                      .delete(`/documents/${documentId}`)
+                      .expect(200)
+                      .expect({});
+
+                    const remainingDocument =
+                      documentId === 1
+                        ? fixtures.secondDocument
+                        : fixtures.firstDocument;
+
+                    await expectDatabaseDocumentsState(
+                      constants.databasePath,
+                      constants.databaseDocumentsDir,
+                      [remainingDocument],
+                      true,
+                      dataSource!,
+                    );
+                  });
+                },
+              );
+            }
+
+            describe('for request with unknown document id', () => {
+              it('should 200, not alter database and return nothing ', async () => {
+                await request(app!.getHttpServer())
+                  .delete('/documents/3')
+                  .expect(200)
+                  .expect({});
+
+                await expectDatabaseDocumentsState(
+                  constants.databasePath,
+                  constants.databaseDocumentsDir,
+                  databaseShouldContainDocuments
+                    ? [fixtures.firstDocument, fixtures.secondDocument]
+                    : [],
+                  true,
+                  dataSource!,
+                );
+              });
+            });
+          }
+
+          if (!databaseShouldBeAvailable) {
+            describe.each([[1], [2], [3]])(
+              'for request with document id (%s)',
+              (documentId) => {
+                it('should 500, not alter database and return message that explains error cause', async () => {
+                  await request(app!.getHttpServer())
+                    .delete(`/documents/${documentId}`)
+                    .expect(500)
+                    .expect({
+                      message:
+                        'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+                      error: 'Internal Server Error',
+                      statusCode: 500,
+                    });
+
+                  await expectDatabaseDocumentsState(
+                    constants.databasePath,
+                    constants.databaseDocumentsDir,
+                    databaseShouldContainDocuments
+                      ? [fixtures.firstDocument, fixtures.secondDocument]
+                      : [],
+                    false,
+                    dataSource!,
+                  );
+                });
+              },
+            );
+          }
         });
       });
     });
-    */
   });
 });

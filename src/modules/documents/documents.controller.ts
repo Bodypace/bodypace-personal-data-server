@@ -111,6 +111,17 @@ export class DocumentsController {
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    return await this.documentService.remove(+id);
+    try {
+      return await this.documentService.remove(+id);
+    } catch (error) {
+      if (error === `Cannot remove document from database, unknown id #${id}`) {
+        return;
+      }
+      // TODO: add { cause: error } for debugging
+      // https://docs.nestjs.com/exception-filters
+      throw new InternalServerErrorException(
+        'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+      );
+    }
   }
 }

@@ -56,7 +56,7 @@ export interface TestFixtures {
   uploadedFile?: Express.Multer.File;
 }
 
-export async function expectDatabaseWasNotAltered(
+export async function expectDatabaseDocumentsState(
   databasePath: string,
   databaseDocumentsDir: string,
   databaseShouldContain: TestDocument[],
@@ -72,8 +72,8 @@ export async function expectDatabaseWasNotAltered(
 
   const documentsRepository = availableDataSource.getRepository(Document);
   await expect(documentsRepository.find()).resolves.toStrictEqual(
-    databaseShouldContain.map((testDocument, i) =>
-      newDocument(i + 1, testDocument.name!, testDocument.keys!),
+    databaseShouldContain.map((testDocument) =>
+      newDocument(testDocument.id!, testDocument.name!, testDocument.keys!),
     ),
   );
 
@@ -96,5 +96,5 @@ export default {
   filesEqual,
   fileEquals,
   newDataSource,
-  expectDatabaseWasNotAltered,
+  expectDatabaseWasNotAltered: expectDatabaseDocumentsState,
 };
