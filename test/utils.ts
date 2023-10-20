@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { DataSource } from 'typeorm';
 import { readdir } from 'node:fs/promises';
 
-export function newDocument(
+function newDocument(
   id: Document['id'],
   name: Document['name'],
   keys: Document['keys'],
@@ -15,7 +15,7 @@ export function newDocument(
   return document;
 }
 
-export async function filesEqual(
+async function filesEqual(
   filePath_1: string,
   filePath_2: string,
 ): Promise<boolean> {
@@ -24,15 +24,12 @@ export async function filesEqual(
   return Buffer.compare(file_1, file_2) === 0;
 }
 
-export async function fileEquals(
-  filePath: string,
-  buffer: Buffer,
-): Promise<boolean> {
+async function fileEquals(filePath: string, buffer: Buffer): Promise<boolean> {
   const file: Buffer = await readFile(filePath);
   return Buffer.compare(file, buffer) === 0;
 }
 
-export async function newDataSource(path: string): Promise<DataSource> {
+async function newDataSource(path: string): Promise<DataSource> {
   const dataSource = new DataSource({
     type: 'sqlite',
     database: path,
@@ -56,9 +53,8 @@ export interface TestFixtures {
   uploadedFile?: Express.Multer.File;
 }
 
-export async function expectDatabaseDocumentsState(
+async function expectDatabaseDocumentsRepositoryState(
   databasePath: string,
-  databaseDocumentsDir: string,
   databaseShouldContain: TestDocument[],
   databaseShouldBeAvailable: boolean,
   dataSource: DataSource,
@@ -76,7 +72,12 @@ export async function expectDatabaseDocumentsState(
       newDocument(testDocument.id!, testDocument.name!, testDocument.keys!),
     ),
   );
+}
 
+async function expectDatabaseDocumentsDirState(
+  databaseDocumentsDir: string,
+  databaseShouldContain: TestDocument[],
+) {
   await expect(readdir(databaseDocumentsDir)).resolves.toStrictEqual(
     databaseShouldContain.map((testDocument) => testDocument.name),
   );
@@ -91,10 +92,27 @@ export async function expectDatabaseDocumentsState(
   }
 }
 
+async function expectDatabaseDocumentsState(
+  databasePath: string,
+  databaseDocumentsDir: string,
+  databaseShouldContain: TestDocument[],
+  databaseShouldBeAvailable: boolean,
+  dataSource: DataSource,
+) {
+  await expectDatabaseDocumentsRepositoryState(
+    databasePath,
+    databaseShouldContain,
+    databaseShouldBeAvailable,
+    dataSource,
+  );
+
+  await expectDatabaseDocumentsDirState(
+    databaseDocumentsDir,
+    databaseShouldContain,
+  );
+}
+
 export default {
-  newDocument,
-  filesEqual,
   fileEquals,
-  newDataSource,
   expectDatabaseDocumentsState,
 };

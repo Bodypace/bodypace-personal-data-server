@@ -3,8 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
-import { Document } from '../src/modules/documents/entities/document.entity';
-import { rm, mkdir, writeFile, readdir } from 'node:fs/promises';
+import { rm, mkdir, writeFile } from 'node:fs/promises';
 import utils from './utils';
 import type { TestFixtures } from './utils';
 
@@ -89,21 +88,8 @@ describe('AppController (e2e)', () => {
       describe('with database that is empty', () => {
         describe('with database available', () => {
           describe('for request that is correct', () => {
-            it('should 201 and return nothing', () => {
-              fixtures.firstDocument.name = 'my-uploaded-file.pdf';
-              fixtures.firstDocument.path = constants.testDocument.pdf.path;
-              fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
-
-              return request(app!.getHttpServer())
-                .post('/documents')
-                .attach('file', fixtures.firstDocument.path)
-                .field('name', fixtures.firstDocument.name)
-                .field('keys', fixtures.firstDocument.keys)
-                .expect(201)
-                .expect({});
-            });
-
-            it('should 201 and store document info in SQL database', async () => {
+            it('should 201, store document in database and return nothing', async () => {
+              fixtures.firstDocument.id = 1;
               fixtures.firstDocument.name = 'my-uploaded-file.pdf';
               fixtures.firstDocument.path = constants.testDocument.pdf.path;
               fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
@@ -116,39 +102,13 @@ describe('AppController (e2e)', () => {
                 .expect(201)
                 .expect({});
 
-              const documentsRepository = dataSource!.getRepository(Document);
-              await expect(documentsRepository.find()).resolves.toStrictEqual([
-                utils.newDocument(
-                  1,
-                  fixtures.firstDocument.name,
-                  fixtures.firstDocument.keys,
-                ),
-              ]);
-            });
-
-            it('should 201 and store uploaded file in database folder', async () => {
-              fixtures.firstDocument.name = 'my-uploaded-file.pdf';
-              fixtures.firstDocument.path = constants.testDocument.pdf.path;
-              fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
-
-              await request(app!.getHttpServer())
-                .post('/documents')
-                .attach('file', fixtures.firstDocument.path)
-                .field('name', fixtures.firstDocument.name)
-                .field('keys', fixtures.firstDocument.keys)
-                .expect(201)
-                .expect({});
-
-              await expect(
-                readdir(constants.databaseDocumentsDir),
-              ).resolves.toStrictEqual([fixtures.firstDocument.name]);
-
-              await expect(
-                utils.filesEqual(
-                  fixtures.firstDocument.path,
-                  `${constants.databaseDocumentsDir}/${fixtures.firstDocument.name}`,
-                ),
-              ).resolves.toBeTruthy();
+              await utils.expectDatabaseDocumentsState(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                [fixtures.firstDocument],
+                true,
+                dataSource!,
+              );
             });
           });
         });
@@ -163,11 +123,13 @@ describe('AppController (e2e)', () => {
             'for request that is correct - %s',
             (_, secondDocumentIsDifferent: boolean) => {
               beforeEach(async () => {
-                fixtures.firstDocument.name = 'my-uploaded-file.pdf';
+                fixtures.firstDocument.id = 1;
+                fixtures.firstDocument.name = 'my-uploaded-file-1.pdf';
                 fixtures.firstDocument.path = constants.testDocument.pdf.path;
                 fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
 
-                fixtures.secondDocument.name = 'my-uploaded-file.md';
+                fixtures.secondDocument.id = 2;
+                fixtures.secondDocument.name = 'my-uploaded-file-2.md';
                 if (secondDocumentIsDifferent) {
                   fixtures.secondDocument.path =
                     constants.testDocument.markdown.path;
@@ -186,45 +148,10 @@ describe('AppController (e2e)', () => {
                   .expect({});
               });
 
-              it('should 201 and return nothing', () => {
-                return request(app!.getHttpServer())
-                  .post('/documents')
-                  .attach('file', fixtures.secondDocument.path!)
-                  .field('name', fixtures.secondDocument.name!)
-                  .field('keys', fixtures.secondDocument.keys!)
-                  .expect(201)
-                  .expect({});
-              });
-
-              it('should 201 and store document info in SQL database (now 2 entries)', async () => {
-                await request(app!.getHttpServer())
-                  .post('/documents')
-                  .attach('file', fixtures.secondDocument.path!)
-                  .field('name', fixtures.secondDocument.name!)
-                  .field('keys', fixtures.secondDocument.keys!)
-                  .expect(201)
-                  .expect({});
-
-                const documentsRepository = dataSource!.getRepository(Document);
-                await expect(documentsRepository.find()).resolves.toStrictEqual(
-                  [
-                    utils.newDocument(
-                      1,
-                      fixtures.firstDocument.name!,
-                      fixtures.firstDocument.keys!,
-                    ),
-                    utils.newDocument(
-                      2,
-                      fixtures.secondDocument.name!,
-                      fixtures.secondDocument.keys!,
-                    ),
-                  ],
-                );
-              });
-
-              it('should 201 and store uploaded file in database folder (now 2 files)', async () => {
+              it('should 201, store document in database and return nothing', async () => {
                 // TODO: When same file is uploaded twice (possibly under different name),
                 // that file should be shared/reused to save space.
+
                 await request(app!.getHttpServer())
                   .post('/documents')
                   .attach('file', fixtures.secondDocument.path!)
@@ -233,26 +160,13 @@ describe('AppController (e2e)', () => {
                   .expect(201)
                   .expect({});
 
-                await expect(
-                  readdir(constants.databaseDocumentsDir),
-                ).resolves.toStrictEqual([
-                  fixtures.secondDocument.name,
-                  fixtures.firstDocument.name,
-                ]);
-
-                await expect(
-                  utils.filesEqual(
-                    fixtures.firstDocument.path!,
-                    `${constants.databaseDocumentsDir}/${fixtures.firstDocument.name}`,
-                  ),
-                ).resolves.toBeTruthy();
-
-                await expect(
-                  utils.filesEqual(
-                    fixtures.secondDocument.path!,
-                    `${constants.databaseDocumentsDir}/${fixtures.secondDocument.name}`,
-                  ),
-                ).resolves.toBeTruthy();
+                await utils.expectDatabaseDocumentsState(
+                  constants.databasePath,
+                  constants.databaseDocumentsDir,
+                  [fixtures.firstDocument, fixtures.secondDocument],
+                  true,
+                  dataSource!,
+                );
               });
             },
           );
@@ -265,6 +179,7 @@ describe('AppController (e2e)', () => {
       ])('with database %s', (_, databaseShouldContainDocument: boolean) => {
         beforeEach(async () => {
           if (databaseShouldContainDocument) {
+            fixtures.firstDocument.id = 1;
             fixtures.firstDocument.name = 'my-uploaded-file.pdf';
             fixtures.firstDocument.path = constants.testDocument.pdf.path;
             fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
@@ -278,6 +193,7 @@ describe('AppController (e2e)', () => {
               .expect({});
           }
 
+          fixtures.secondDocument.id = 2;
           fixtures.secondDocument.name = 'my-uploaded-file.md';
           fixtures.secondDocument.path = constants.testDocument.markdown.path;
           fixtures.secondDocument.keys = 'aaaa-bbbb-cccc-dddd-eeee';
@@ -289,10 +205,11 @@ describe('AppController (e2e)', () => {
           });
 
           describe('for request that is correct', () => {
-            it('should 500 and return message that explains error cause', () => {
+            it('should 500, not alter database and return message that explains error cause', async () => {
               // NOTE: maybe 503 would be better but MDN says it needs a few extra things
               // that I don't want to implement and feel are not crucial for now.
-              return request(app!.getHttpServer())
+
+              await request(app!.getHttpServer())
                 .post('/documents')
                 .attach('file', fixtures.secondDocument.path!)
                 .field('name', fixtures.secondDocument.name!)
@@ -304,58 +221,14 @@ describe('AppController (e2e)', () => {
                   message:
                     'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
                 });
-            });
 
-            it('should 500 and not alter SQL database', async () => {
-              await request(app!.getHttpServer())
-                .post('/documents')
-                .attach('file', fixtures.secondDocument.path!)
-                .field('name', fixtures.secondDocument.name!)
-                .field('keys', fixtures.secondDocument.keys!)
-                .expect(500);
-
-              expect(dataSource!.isInitialized).toBeFalsy();
-              dataSource = await utils.newDataSource(constants.databasePath);
-              expect(dataSource!.isInitialized).toBeTruthy();
-
-              const documentsRepository = dataSource!.getRepository(Document);
-              await expect(documentsRepository.find()).resolves.toStrictEqual(
-                databaseShouldContainDocument
-                  ? [
-                      utils.newDocument(
-                        1,
-                        fixtures.firstDocument.name!,
-                        fixtures.firstDocument.keys!,
-                      ),
-                    ]
-                  : [],
+              await utils.expectDatabaseDocumentsState(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                databaseShouldContainDocument ? [fixtures.firstDocument] : [],
+                false,
+                dataSource!,
               );
-            });
-
-            it('should 500 and not alter database folder with uploaded files', async () => {
-              await request(app!.getHttpServer())
-                .post('/documents')
-                .attach('file', fixtures.secondDocument.path!)
-                .field('name', fixtures.secondDocument.name!)
-                .field('keys', fixtures.secondDocument.keys!)
-                .expect(500);
-
-              await expect(
-                readdir(constants.databaseDocumentsDir),
-              ).resolves.toStrictEqual(
-                databaseShouldContainDocument
-                  ? [fixtures.firstDocument.name]
-                  : [],
-              );
-
-              if (databaseShouldContainDocument) {
-                await expect(
-                  utils.filesEqual(
-                    fixtures.firstDocument.path!,
-                    `${constants.databaseDocumentsDir}/${fixtures.firstDocument.name}`,
-                  ),
-                ).resolves.toBeTruthy();
-              }
             });
           });
         });
@@ -428,6 +301,7 @@ describe('AppController (e2e)', () => {
                 await helpers.expectDatabaseWasNotAltered!();
               });
             });
+
             describe('for request that has Content-Type application/json and no `file` field', () => {
               it('should 415, not alter database and return message that explains error cause', async () => {
                 const wrongContentType = 'application/json';
@@ -710,14 +584,13 @@ describe('AppController (e2e)', () => {
                   statusCode: 404,
                 });
 
-              const documentsRepository = dataSource!.getRepository(Document);
-              await expect(documentsRepository.find()).resolves.toStrictEqual(
+              await utils.expectDatabaseDocumentsState(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
                 [],
+                true,
+                dataSource!,
               );
-
-              await expect(
-                readdir(constants.databaseDocumentsDir),
-              ).resolves.toStrictEqual([]);
             });
           });
         });
@@ -734,14 +607,13 @@ describe('AppController (e2e)', () => {
                 .expect(200)
                 .expect([]);
 
-              const documentsRepository = dataSource!.getRepository(Document);
-              await expect(documentsRepository.find()).resolves.toStrictEqual(
+              await utils.expectDatabaseDocumentsState(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
                 [],
+                true,
+                dataSource!,
               );
-
-              await expect(
-                readdir(constants.databaseDocumentsDir),
-              ).resolves.toStrictEqual([]);
             });
           });
         });
@@ -752,8 +624,8 @@ describe('AppController (e2e)', () => {
           });
 
           describe('for request that is correct', () => {
-            it('should 500 and return message that explains error cause', () => {
-              return request(app!.getHttpServer())
+            it('should 500, not alter database and return message that explains error cause', async () => {
+              await request(app!.getHttpServer())
                 .get('/documents')
                 .expect(500)
                 .expect({
@@ -762,27 +634,14 @@ describe('AppController (e2e)', () => {
                   error: 'Internal Server Error',
                   statusCode: 500,
                 });
-            });
 
-            it('should 500 and not alter SQL database', async () => {
-              await request(app!.getHttpServer()).get('/documents').expect(500);
-
-              expect(dataSource!.isInitialized).toBeFalsy();
-              dataSource = await utils.newDataSource(constants.databasePath);
-              expect(dataSource!.isInitialized).toBeTruthy();
-
-              const documentsRepository = dataSource!.getRepository(Document);
-              await expect(documentsRepository.find()).resolves.toStrictEqual(
+              await utils.expectDatabaseDocumentsState(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
                 [],
+                false,
+                dataSource!,
               );
-            });
-
-            it('should 500 and not alter database folder with uploaded files', async () => {
-              await request(app!.getHttpServer()).get('/documents').expect(500);
-
-              await expect(
-                readdir(constants.databaseDocumentsDir),
-              ).resolves.toStrictEqual([]);
             });
           });
         });
@@ -790,6 +649,7 @@ describe('AppController (e2e)', () => {
 
       describe('with database that already stores two documents', () => {
         beforeEach(async () => {
+          fixtures.firstDocument.id = 1;
           fixtures.firstDocument.name = 'first-uploaded-file.pdf';
           fixtures.firstDocument.path = constants.testDocument.pdf.path;
           fixtures.firstDocument.keys = 'first-file-keys';
@@ -802,6 +662,7 @@ describe('AppController (e2e)', () => {
             .expect(201)
             .expect({});
 
+          fixtures.secondDocument.id = 2;
           fixtures.secondDocument.name = 'second-uploaded-file.pdf';
           fixtures.secondDocument.path = constants.testDocument.markdown.path;
           fixtures.secondDocument.keys = 'second-file-keys';
@@ -834,40 +695,13 @@ describe('AppController (e2e)', () => {
                   },
                 ]);
 
-              const documentsRepository = dataSource!.getRepository(Document);
-              await expect(documentsRepository.find()).resolves.toStrictEqual([
-                utils.newDocument(
-                  1,
-                  fixtures.firstDocument.name!,
-                  fixtures.firstDocument.keys!,
-                ),
-                utils.newDocument(
-                  2,
-                  fixtures.secondDocument.name!,
-                  fixtures.secondDocument.keys!,
-                ),
-              ]);
-
-              await expect(
-                readdir(constants.databaseDocumentsDir),
-              ).resolves.toStrictEqual([
-                fixtures.firstDocument.name,
-                fixtures.secondDocument.name,
-              ]);
-
-              await expect(
-                utils.filesEqual(
-                  fixtures.firstDocument.path!,
-                  `${constants.databaseDocumentsDir}/${fixtures.firstDocument.name}`,
-                ),
-              ).resolves.toBeTruthy();
-
-              await expect(
-                utils.filesEqual(
-                  fixtures.secondDocument.path!,
-                  `${constants.databaseDocumentsDir}/${fixtures.secondDocument.name}`,
-                ),
-              ).resolves.toBeTruthy();
+              await utils.expectDatabaseDocumentsState(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                [fixtures.firstDocument, fixtures.secondDocument],
+                true,
+                dataSource!,
+              );
             });
           });
         });
@@ -878,8 +712,8 @@ describe('AppController (e2e)', () => {
           });
 
           describe('for request that is correct', () => {
-            it('should 500 and return that explains error cause', () => {
-              return request(app!.getHttpServer())
+            it('should 500, not alter database and return message that explains error cause', async () => {
+              await request(app!.getHttpServer())
                 .get('/documents')
                 .expect(500)
                 .expect({
@@ -888,53 +722,14 @@ describe('AppController (e2e)', () => {
                   error: 'Internal Server Error',
                   statusCode: 500,
                 });
-            });
 
-            it('should 500 and not alter SQL database', async () => {
-              await request(app!.getHttpServer()).get('/documents').expect(500);
-
-              expect(dataSource!.isInitialized).toBeFalsy();
-              dataSource = await utils.newDataSource(constants.databasePath);
-              expect(dataSource!.isInitialized).toBeTruthy();
-
-              const documentsRepository = dataSource!.getRepository(Document);
-              await expect(documentsRepository.find()).resolves.toStrictEqual([
-                utils.newDocument(
-                  1,
-                  fixtures.firstDocument.name!,
-                  fixtures.firstDocument.keys!,
-                ),
-                utils.newDocument(
-                  2,
-                  fixtures.secondDocument.name!,
-                  fixtures.secondDocument.keys!,
-                ),
-              ]);
-            });
-
-            it('should 500 and not alter database folder with uploaded files', async () => {
-              await request(app!.getHttpServer()).get('/documents').expect(500);
-
-              await expect(
-                readdir(constants.databaseDocumentsDir),
-              ).resolves.toStrictEqual([
-                fixtures.firstDocument.name,
-                fixtures.secondDocument.name,
-              ]);
-
-              await expect(
-                utils.filesEqual(
-                  fixtures.firstDocument.path!,
-                  `${constants.databaseDocumentsDir}/${fixtures.firstDocument.name}`,
-                ),
-              ).resolves.toBeTruthy();
-
-              await expect(
-                utils.filesEqual(
-                  fixtures.secondDocument.path!,
-                  `${constants.databaseDocumentsDir}/${fixtures.secondDocument.name}`,
-                ),
-              ).resolves.toBeTruthy();
+              await utils.expectDatabaseDocumentsState(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                [fixtures.firstDocument, fixtures.secondDocument],
+                false,
+                dataSource!,
+              );
             });
           });
         });
@@ -977,7 +772,7 @@ describe('AppController (e2e)', () => {
             ['correct technically (first document id - 001)', '001'],
             ['correct (second document id - 2)', 2],
           ])('for request that is %s', (_, correctDocumentId) => {
-            it('should 200, not alter database and download document', async () => {
+            it('should 200, not alter database and download correct document', async () => {
               let data = '';
               const response = await request(app!.getHttpServer())
                 .get(`/documents/${correctDocumentId}`)
