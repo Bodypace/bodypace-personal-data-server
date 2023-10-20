@@ -5,7 +5,7 @@ import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
 import { Document } from '../src/modules/documents/entities/document.entity';
 import { rm, mkdir, writeFile, readdir } from 'node:fs/promises';
-import utils, { expectDatabaseDocumentsState } from './utils';
+import utils from './utils';
 import type { TestFixtures } from './utils';
 
 const constants = {
@@ -367,6 +367,7 @@ describe('AppController (e2e)', () => {
       ])('with database %s', (_, databaseShouldContainDocument: boolean) => {
         beforeEach(async () => {
           if (databaseShouldContainDocument) {
+            fixtures.firstDocument.id = 1;
             fixtures.firstDocument.name = 'my-uploaded-file.pdf';
             fixtures.firstDocument.path = constants.testDocument.pdf.path;
             fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
@@ -395,41 +396,13 @@ describe('AppController (e2e)', () => {
             }
 
             helpers.expectDatabaseWasNotAltered = async () => {
-              if (!databaseShouldBeAvailable) {
-                expect(dataSource!.isInitialized).toBeFalsy();
-                dataSource = await utils.newDataSource(constants.databasePath);
-              }
-              expect(dataSource!.isInitialized).toBeTruthy();
-
-              const documentsRepository = dataSource!.getRepository(Document);
-              await expect(documentsRepository.find()).resolves.toStrictEqual(
-                databaseShouldContainDocument
-                  ? [
-                      utils.newDocument(
-                        1,
-                        fixtures.firstDocument.name!,
-                        fixtures.firstDocument.keys!,
-                      ),
-                    ]
-                  : [],
+              await utils.expectDatabaseDocumentsState(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                databaseShouldContainDocument ? [fixtures.firstDocument] : [],
+                databaseShouldBeAvailable,
+                dataSource!,
               );
-
-              await expect(
-                readdir(constants.databaseDocumentsDir),
-              ).resolves.toStrictEqual(
-                databaseShouldContainDocument
-                  ? [fixtures.firstDocument.name]
-                  : [],
-              );
-
-              if (databaseShouldContainDocument) {
-                await expect(
-                  utils.filesEqual(
-                    fixtures.firstDocument.path!,
-                    `${constants.databaseDocumentsDir}/${fixtures.firstDocument.name}`,
-                  ),
-                ).resolves.toBeTruthy();
-              }
             };
           });
 
@@ -1034,7 +1007,7 @@ describe('AppController (e2e)', () => {
                 ),
               ).resolves.toBeTruthy();
 
-              await expectDatabaseDocumentsState(
+              await utils.expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 [fixtures.firstDocument, fixtures.secondDocument],
@@ -1066,7 +1039,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 500,
                 });
 
-              await expectDatabaseDocumentsState(
+              await utils.expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 [fixtures.firstDocument, fixtures.secondDocument],
@@ -1127,7 +1100,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 404,
                 });
 
-              await expectDatabaseDocumentsState(
+              await utils.expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 databaseShouldContainDocuments
@@ -1161,7 +1134,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 500,
                 });
 
-              await expectDatabaseDocumentsState(
+              await utils.expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 databaseShouldContainDocuments
@@ -1201,7 +1174,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 400,
                 });
 
-              await expectDatabaseDocumentsState(
+              await utils.expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 databaseShouldContainDocuments
@@ -1278,7 +1251,7 @@ describe('AppController (e2e)', () => {
                   statusCode: 404,
                 });
 
-              await expectDatabaseDocumentsState(
+              await utils.expectDatabaseDocumentsState(
                 constants.databasePath,
                 constants.databaseDocumentsDir,
                 databaseShouldContainDocuments
@@ -1358,7 +1331,7 @@ describe('AppController (e2e)', () => {
                         ? fixtures.secondDocument
                         : fixtures.firstDocument;
 
-                    await expectDatabaseDocumentsState(
+                    await utils.expectDatabaseDocumentsState(
                       constants.databasePath,
                       constants.databaseDocumentsDir,
                       [remainingDocument],
@@ -1377,7 +1350,7 @@ describe('AppController (e2e)', () => {
                   .expect(200)
                   .expect({});
 
-                await expectDatabaseDocumentsState(
+                await utils.expectDatabaseDocumentsState(
                   constants.databasePath,
                   constants.databaseDocumentsDir,
                   databaseShouldContainDocuments
@@ -1405,7 +1378,7 @@ describe('AppController (e2e)', () => {
                       statusCode: 500,
                     });
 
-                  await expectDatabaseDocumentsState(
+                  await utils.expectDatabaseDocumentsState(
                     constants.databasePath,
                     constants.databaseDocumentsDir,
                     databaseShouldContainDocuments

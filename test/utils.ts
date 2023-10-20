@@ -96,5 +96,5 @@ export default {
   filesEqual,
   fileEquals,
   newDataSource,
-  expectDatabaseWasNotAltered: expectDatabaseDocumentsState,
+  expectDatabaseDocumentsState,
 };
