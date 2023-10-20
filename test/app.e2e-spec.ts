@@ -1217,22 +1217,79 @@ describe('AppController (e2e)', () => {
     // TODO: test that / (PATCH) does not work
     // TODO: test that /:id (PATCH) does not work
 
+    describe('/ (DELETE)', () => {
+      describe.each([
+        ['that is empty', false],
+        ['that already stores two documents', true],
+      ])('with database %s', (_, databaseShouldContainDocuments: boolean) => {
+        beforeEach(async () => {
+          if (databaseShouldContainDocuments) {
+            fixtures.firstDocument.name = 'first-uploaded-file.pdf';
+            fixtures.firstDocument.path = constants.testDocument.pdf.path;
+            fixtures.firstDocument.keys = 'first-file-keys';
+
+            await request(app!.getHttpServer())
+              .post('/documents')
+              .attach('file', fixtures.firstDocument.path)
+              .field('name', fixtures.firstDocument.name)
+              .field('keys', fixtures.firstDocument.keys)
+              .expect(201)
+              .expect({});
+
+            fixtures.secondDocument.name = 'second-uploaded-file.pdf';
+            fixtures.secondDocument.path = constants.testDocument.markdown.path;
+            fixtures.secondDocument.keys = 'second-file-keys';
+
+            await request(app!.getHttpServer())
+              .post('/documents')
+              .attach('file', fixtures.secondDocument.path)
+              .field('name', fixtures.secondDocument.name)
+              .field('keys', fixtures.secondDocument.keys)
+              .expect(201)
+              .expect({});
+          }
+        });
+
+        describe.each([
+          ['available', true],
+          ['not available', false],
+        ])('with database %s', (_, databaseShouldBeAvailable: boolean) => {
+          beforeEach(async () => {
+            if (!databaseShouldBeAvailable) {
+              await dataSource!.destroy();
+            }
+          });
+
+          describe('for request that is correct', () => {
+            it('should 404, not alter database and return message that explains error cause', async () => {
+              await request(app!.getHttpServer())
+                .delete('/documents')
+                .expect(404)
+                .expect({
+                  // TODO: this message could be more descriptive by explaining that document id is required
+                  message: 'Cannot DELETE /documents',
+                  error: 'Not Found',
+                  statusCode: 404,
+                });
+
+              await expectDatabaseWasNotAltered(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                databaseShouldContainDocuments
+                  ? [fixtures.firstDocument, fixtures.secondDocument]
+                  : [],
+                databaseShouldBeAvailable,
+                dataSource!,
+              );
+            });
+          });
+        });
+      });
+    });
+
     /*
 
     // below tests are just my notes, not actual tests that could be uncommented and ran.
-
-    describe('/ (DELETE)', () => {
-      it('should 404', () => {
-        return request(app!.getHttpServer())
-          .delete('/documents')
-          .expect(404)
-          .expect({
-            message: 'Cannot DELETE /documents',
-            error: 'Not Found',
-            statusCode: 404,
-          });
-      });
-    });
 
     describe('/:id (DELETE)', () => {
       describe('with nothing stored in database', () => {
