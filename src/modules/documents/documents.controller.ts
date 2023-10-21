@@ -114,7 +114,10 @@ export class DocumentsController {
     try {
       return await this.documentService.remove(+id);
     } catch (error) {
-      if (error === `Cannot remove document from database, unknown id #${id}`) {
+      if (
+        error.message ===
+        `Cannot remove document from database, unknown id #${id}`
+      ) {
         return;
       }
       // TODO: add { cause: error } for debugging

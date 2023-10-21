@@ -1,7 +1,24 @@
 import { Document } from '../src/modules/documents/entities/document.entity';
-import { readFile } from 'node:fs/promises';
 import { DataSource } from 'typeorm';
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
+
+async function newMulterFile(
+  directory: string,
+  fileName: string,
+): Promise<Express.Multer.File> {
+  return {
+    fieldname: 'file',
+    originalname: fileName,
+    encoding: '7bit',
+    mimetype: 'application/pdf', // TODO: fix this for than pdf, .md and other files
+    size: 7926, // TODO: fix this for other files than pdf
+    stream: undefined!,
+    destination: undefined!,
+    filename: undefined!,
+    path: undefined!,
+    buffer: await readFile(directory + '/' + fileName),
+  };
+}
 
 function newDocument(
   id: Document['id'],
@@ -45,6 +62,7 @@ export interface TestDocument {
   name?: string;
   path?: string;
   keys?: string;
+  file?: Express.Multer.File;
 }
 
 export interface TestFixtures {
@@ -113,6 +131,9 @@ async function expectDatabaseDocumentsState(
 }
 
 export default {
+  newMulterFile,
+  newDocument, // TODO: remove it
+  filesEqual, // TODO: remove it
   fileEquals,
   expectDatabaseDocumentsState,
 };

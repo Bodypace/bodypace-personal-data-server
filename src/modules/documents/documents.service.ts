@@ -18,12 +18,22 @@ export class DocumentsService {
     file: Express.Multer.File,
     keys: string,
   ): Promise<void> {
+    if (!name) {
+      throw new Error('`name` must be a non-empty string');
+    }
+
+    if (!keys) {
+      throw new Error('`keys` must be a non-empty string');
+    }
+
     const documents = await this.documentsRepository.findBy({
       name: name,
     });
 
     if (documents.length !== 0) {
-      throw 'Cannot create document because name already exists: ' + name;
+      throw new Error(
+        `Cannot create document because name already exists: ${name}`,
+      );
     }
 
     await writeFile(`${this.storagePath}/${name}`, file.buffer);
@@ -48,7 +58,9 @@ export class DocumentsService {
   async remove(id: number): Promise<void> {
     const document = await this.findOne(id);
     if (document === null) {
-      throw 'Cannot remove document from database, unknown id #' + id;
+      throw new Error(
+        `Cannot remove document from database, unknown id #${id}`,
+      );
     }
     await unlink(`${this.storagePath}/${document.name}`);
     await this.documentsRepository.remove(document);
