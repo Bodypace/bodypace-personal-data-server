@@ -1,6 +1,7 @@
 import { Document } from '../src/modules/documents/entities/document.entity';
+import { Account } from '../src/modules/accounts/modules/database/entities/account.entity';
 import { DataSource } from 'typeorm';
-import { readdir, readFile } from 'node:fs/promises';
+import { unlink, rm, mkdir, readdir, readFile } from 'node:fs/promises';
 
 async function newMulterFile(
   directory: string,
@@ -32,6 +33,18 @@ function newDocument(
   return document;
 }
 
+function newAccount(
+  id: Account['id'],
+  username: Account['username'],
+  password: Account['password'],
+): Account {
+  const account = new Account();
+  account.id = id;
+  account.username = username;
+  account.password = password;
+  return account;
+}
+
 async function filesEqual(
   filePath_1: string,
   filePath_2: string,
@@ -50,7 +63,7 @@ async function newDataSource(path: string): Promise<DataSource> {
   const dataSource = new DataSource({
     type: 'sqlite',
     database: path,
-    entities: [Document],
+    entities: [Document, Account],
   });
 
   await dataSource.initialize();
@@ -65,10 +78,50 @@ export interface TestDocument {
   file?: Express.Multer.File;
 }
 
+export interface TestAccount {
+  id?: number;
+  username?: string;
+  password?: string;
+}
+
 export interface TestFixtures {
   firstDocument: TestDocument;
   secondDocument: TestDocument;
   uploadedFile?: Express.Multer.File;
+}
+
+async function deleteDatabase(
+  databasePath: string,
+  databaseDocumentsDir: string,
+  dataSource: DataSource,
+) {
+  if (dataSource.isInitialized) {
+    await dataSource.destroy();
+  }
+  await unlink(databasePath);
+  await rm(databaseDocumentsDir, { recursive: true });
+  await mkdir(databaseDocumentsDir);
+}
+
+async function expectDatabaseAccountsRepositoryState(
+  databasePath: string,
+  databaseShouldContain: TestAccount[],
+  databaseShouldBeAvailable: boolean,
+  dataSource: DataSource,
+) {
+  let availableDataSource = dataSource;
+  if (!databaseShouldBeAvailable) {
+    expect(dataSource.isInitialized).toBeFalsy();
+    availableDataSource = await newDataSource(databasePath);
+  }
+  expect(availableDataSource.isInitialized).toBeTruthy();
+
+  const accountsRepository = availableDataSource.getRepository(Account);
+  await expect(accountsRepository.find()).resolves.toStrictEqual(
+    databaseShouldContain.map((account) =>
+      newAccount(account.id!, account.username!, account.password!),
+    ),
+  );
 }
 
 async function expectDatabaseDocumentsRepositoryState(
@@ -130,10 +183,39 @@ async function expectDatabaseDocumentsState(
   );
 }
 
+async function expectDatabaseAccountsState(
+  databasePath: string,
+  databaseShouldContain: TestAccount[],
+  databaseShouldBeAvailable: boolean,
+  dataSource: DataSource,
+) {
+  await expectDatabaseAccountsRepositoryState(
+    databasePath,
+    databaseShouldContain,
+    databaseShouldBeAvailable,
+    dataSource,
+  );
+}
+
+function expectMockedCalls(spec: any[]) {
+  for (const [func, calls] of spec) {
+    let callNo = 1;
+    expect(func).toHaveBeenCalledTimes(calls.length);
+    for (const callArgs of calls) {
+      expect(func).toHaveBeenNthCalledWith(callNo, ...callArgs);
+      ++callNo;
+    }
+  }
+}
+
 export default {
+  deleteDatabase,
   newMulterFile,
   newDocument, // TODO: remove it
+  newAccount,
   filesEqual, // TODO: remove it
   fileEquals,
   expectDatabaseDocumentsState,
+  expectDatabaseAccountsState,
+  expectMockedCalls,
 };

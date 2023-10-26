@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { AccountsModule } from './modules/accounts/accounts.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
       synchronize: true,
     }),
     DocumentsModule,
+    AccountsModule,
   ],
 })
 export class AppModule {}
