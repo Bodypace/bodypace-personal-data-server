@@ -6,6 +6,8 @@ import {
   UseGuards,
   Request,
   ValidationPipe,
+  InternalServerErrorException,
+  ConflictException,
 } from '@nestjs/common';
 import { AccountsService } from './accounts.service';
 import { AuthGuard } from './guards/auth.guard';
@@ -16,11 +18,34 @@ export class AccountsController {
   constructor(private accountsService: AccountsService) {}
 
   @Post('register')
-  async register(@Body(ValidationPipe) credentials: AccountCredentials) {
-    await this.accountsService.register(
-      credentials.username,
-      credentials.password,
-    );
+  async register(
+    @Body(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        forbidUnknownValues: true,
+        skipMissingProperties: false,
+      }),
+    )
+    credentials: AccountCredentials,
+  ) {
+    try {
+      await this.accountsService.register(
+        credentials.username,
+        credentials.password,
+      );
+    } catch (error) {
+      if (error.message === 'username is taken') {
+        throw new ConflictException(
+          'account username is already taken, try different one',
+        );
+      }
+      // TODO: add { cause: error } for debugging
+      // https://docs.nestjs.com/exception-filters
+      throw new InternalServerErrorException(
+        'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+      );
+    }
   }
 
   @Post('login')

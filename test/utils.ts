@@ -3,6 +3,29 @@ import { Account } from '../src/modules/accounts/modules/database/entities/accou
 import { DataSource } from 'typeorm';
 import { unlink, rm, mkdir, readdir, readFile } from 'node:fs/promises';
 
+const constants = {
+  databaseDir: 'database',
+  databasePath: 'database/database.sqlite',
+  databaseDocumentsDir: 'database/documents',
+
+  testDataDir: 'test/data',
+  testDocumentsDir: 'test/data/documents',
+  testDocument: {
+    pdf: {
+      name: 'sample-document.pdf',
+      path: 'test/data/documents' + '/' + 'sample-document.pdf',
+    },
+    markdown: {
+      name: 'sample-document.md',
+      path: 'test/data/documents' + '/' + 'sample-document.md',
+    },
+    empty: {
+      name: 'sample-empty-document.txt',
+      path: 'test/data/documents' + '/' + 'sample-empty-document.txt',
+    },
+  },
+};
+
 async function newMulterFile(
   directory: string,
   fileName: string,
@@ -101,6 +124,34 @@ async function deleteDatabase(
   await unlink(databasePath);
   await rm(databaseDocumentsDir, { recursive: true });
   await mkdir(databaseDocumentsDir);
+}
+
+async function expectDatabaseHasAccounts(
+  databasePath: string,
+  databaseShouldContain: TestAccount[],
+  databaseShouldBeAvailable: boolean,
+  dataSource: DataSource,
+) {
+  let availableDataSource = dataSource;
+  if (!databaseShouldBeAvailable) {
+    expect(dataSource.isInitialized).toBeFalsy();
+    availableDataSource = await newDataSource(databasePath);
+  }
+  expect(availableDataSource.isInitialized).toBeTruthy();
+
+  const accountsRepository = availableDataSource.getRepository(Account);
+  const accounts = await accountsRepository.find();
+  for (const account of accounts) {
+    account.password = String(account.password.length);
+  }
+
+  const passwordHashLength = 60;
+
+  expect(accounts).toStrictEqual(
+    databaseShouldContain.map((account) =>
+      newAccount(account.id!, account.username!, String(passwordHashLength)),
+    ),
+  );
 }
 
 async function expectDatabaseAccountsRepositoryState(
@@ -209,6 +260,7 @@ function expectMockedCalls(spec: any[]) {
 }
 
 export default {
+  constants,
   deleteDatabase,
   newMulterFile,
   newDocument, // TODO: remove it
@@ -217,5 +269,6 @@ export default {
   fileEquals,
   expectDatabaseDocumentsState,
   expectDatabaseAccountsState,
+  expectDatabaseHasAccounts,
   expectMockedCalls,
 };

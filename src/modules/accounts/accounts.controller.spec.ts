@@ -111,7 +111,7 @@ describe('AccountsController', () => {
         accountsService.register = jest.fn().mockRejectedValue(registerError);
 
         await expect(controller.register(fixtures.credentials)).rejects.toThrow(
-          registerError.message,
+          'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
         );
 
         utils.expectMockedCalls([
