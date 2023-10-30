@@ -3,6 +3,7 @@ import { AccountsService } from './accounts.service';
 import { AccountsController } from './accounts.controller';
 import { JwtModule } from '@nestjs/jwt';
 import utils from '../../../test/utils';
+import { UnauthorizedException } from '@nestjs/common';
 
 const constants = {
   jwtSecret:
@@ -154,8 +155,8 @@ describe('AccountsController', () => {
       });
     });
 
-    describe('with accountsService#login() that throws error', () => {
-      it('should forward call to accountsService#login() and forward error', async () => {
+    describe('with accountsService#login() that throws error (random Error)', () => {
+      it('should forward call to accountsService#login() and throw database 500 error', async () => {
         fixtures.credentials = {
           username: 'some user name',
           password: 'complex password',
@@ -168,7 +169,32 @@ describe('AccountsController', () => {
         accountsService.login = jest.fn().mockRejectedValue(loginError);
 
         await expect(controller.login(fixtures.credentials)).rejects.toThrow(
-          loginError.message,
+          'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+        );
+
+        utils.expectMockedCalls([
+          [accountsService.register, []],
+          [
+            accountsService.login,
+            [[fixtures.credentials.username, fixtures.credentials.password]],
+          ],
+        ]);
+      });
+    });
+
+    describe('with accountsService#login() that throws error (401 UnauthorizedException)', () => {
+      it('should forward call to accountsService#login() and forward unauthorized 401 error', async () => {
+        fixtures.credentials = {
+          username: 'some user name',
+          password: 'complex password',
+        };
+
+        const loginError = new UnauthorizedException();
+
+        accountsService.login = jest.fn().mockRejectedValue(loginError);
+
+        await expect(controller.login(fixtures.credentials)).rejects.toThrow(
+          loginError,
         );
 
         utils.expectMockedCalls([

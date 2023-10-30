@@ -24,6 +24,8 @@ const constants = {
       path: 'test/data/documents' + '/' + 'sample-empty-document.txt',
     },
   },
+
+  jwtSecretEnvKey: 'BODYPACE_SERVER_JWT_SECRET',
 };
 
 async function newMulterFile(
