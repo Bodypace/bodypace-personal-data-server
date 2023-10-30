@@ -107,6 +107,7 @@ export interface TestAccount {
   id?: number;
   username?: string;
   password?: string;
+  accessToken?: string;
 }
 
 export interface TestFixtures {

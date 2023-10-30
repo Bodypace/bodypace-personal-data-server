@@ -908,7 +908,148 @@ describe('AccountsController (e2e)', () => {
     });
 
     describe('/ (GET)', () => {
-      it('TODO', () => {});
+      describe.each([
+        ['that is empty', false],
+        ['that already stores two accounts', true],
+      ])('with database %s', (_, databaseShouldContainAccouts: boolean) => {
+        beforeEach(async () => {
+          fixtures.firstAccount.id = 1;
+          fixtures.firstAccount.username = 'first account username';
+          fixtures.firstAccount.password = 'first account password';
+
+          fixtures.secondAccount.id = 2;
+          fixtures.secondAccount.username = 'second account username';
+          fixtures.secondAccount.password = 'second account password';
+
+          fixtures.thirdAccount.username = 'unknown username';
+          fixtures.thirdAccount.password = 'unknown password';
+
+          if (databaseShouldContainAccouts) {
+            await request(app!.getHttpServer())
+              .post('/accounts/register')
+              .send({
+                username: fixtures.firstAccount.username,
+                password: fixtures.firstAccount.password,
+              })
+              .expect(201)
+              .expect({});
+
+            await request(app!.getHttpServer())
+              .post('/accounts/register')
+              .send({
+                username: fixtures.secondAccount.username,
+                password: fixtures.secondAccount.password,
+              })
+              .expect(201)
+              .expect({});
+
+            const responseNo1 = await request(app!.getHttpServer())
+              .post('/accounts/login')
+              .send({
+                username: fixtures.firstAccount.username,
+                password: fixtures.firstAccount.password,
+              })
+              .expect(201);
+
+            fixtures.firstAccount.accessToken = responseNo1.body.access_token;
+
+            expect(fixtures.firstAccount.accessToken).toBeDefined();
+            expect(fixtures.firstAccount.accessToken!.length).toBeGreaterThan(
+              150,
+            );
+
+            const responseNo2 = await request(app!.getHttpServer())
+              .post('/accounts/login')
+              .send({
+                username: fixtures.secondAccount.username,
+                password: fixtures.secondAccount.password,
+              })
+              .expect(201);
+
+            fixtures.secondAccount.accessToken = responseNo2.body.access_token;
+
+            expect(fixtures.secondAccount.accessToken).toBeDefined();
+            expect(fixtures.secondAccount.accessToken!.length).toBeGreaterThan(
+              150,
+            );
+          }
+        });
+
+        describe.each([
+          ['available', true],
+          ['not available', false],
+        ])('with database %s', (_, databaseShouldBeAvailable: boolean) => {
+          beforeEach(async () => {
+            if (!databaseShouldBeAvailable) {
+              await dataSource!.destroy();
+            }
+          });
+
+          if (databaseShouldContainAccouts) {
+            describe.each([
+              ['first account', 1],
+              ['second account', 2],
+            ])('for request with valid token - %s', (_, accountId) => {
+              beforeEach(async () => {
+                fixtures.thirdAccount = structuredClone(
+                  accountId === fixtures.firstAccount.id
+                    ? fixtures.firstAccount
+                    : fixtures.secondAccount,
+                );
+
+                expect(fixtures.thirdAccount.id).toBe(accountId);
+              });
+
+              it('should 200, not alter database and return selected account token info', async () => {
+                const response = await request(app!.getHttpServer())
+                  .get('/accounts')
+                  .auth(fixtures.thirdAccount.accessToken!, {
+                    type: 'bearer',
+                  })
+                  .expect(200);
+
+                expect(response.body.sub).toBe(fixtures.thirdAccount.id);
+                expect(response.body.username).toBe(
+                  fixtures.thirdAccount.username,
+                );
+                expect(response.body.iat).toBeDefined();
+                expect(response.body.exp).toBeDefined();
+              });
+            });
+          }
+
+          describe.each([
+            [
+              'incorrect value',
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInVzZXJuYW1lIjoic3N1cnJlYWxpc20iLCJpYXQiOjE2OTg2OTU5MjcsImV4cCI6MTY5ODY5NTk4N30.UUMGiBzb2Z1Iya2Nr8xOScipbS_E0nPdbUBL1vxQboE',
+            ],
+            ['empty string', ''],
+          ])('for request with invalid token - %s', (_, invalidAccessToken) => {
+            it('should 401, not alter database and return message that explains error cause', async () => {
+              await request(app!.getHttpServer())
+                .get('/accounts')
+                .auth(invalidAccessToken, { type: 'bearer' })
+                .expect(401)
+                .expect({
+                  message: 'Unauthorized',
+                  statusCode: 401,
+                });
+            });
+          });
+
+          describe('for request with no token', () => {
+            it('should 401, not alter database and return message that explains error cause', async () => {
+              await request(app!.getHttpServer())
+                .get('/accounts')
+                .expect(401)
+                .expect({
+                  message: 'Unauthorized',
+                  statusCode: 401,
+                });
+            });
+          });
+        });
+      });
     });
 
     // TODO: UPDATE
