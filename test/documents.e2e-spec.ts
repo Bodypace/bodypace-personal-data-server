@@ -34,7 +34,7 @@ interface Helpers {
   expectDatabaseWasNotAltered?: () => Promise<void>;
 }
 
-describe('AppController (e2e)', () => {
+describe('DocumentsController (e2e)', () => {
   const fixtures: TestFixtures = {
     firstDocument: {},
     secondDocument: {},
