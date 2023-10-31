@@ -598,139 +598,106 @@ describe('DocumentsController (e2e)', () => {
     });
 
     describe('/ (GET)', () => {
-      describe('with database that is empty', () => {
-        describe('with database available', () => {
-          describe('for request that is correct', () => {
-            it('should 200, not alter database and return empty array', async () => {
-              await request(app!.getHttpServer())
-                .get('/documents')
-                .expect(200)
-                .expect([]);
-
-              await utils.expectDatabaseDocumentsState(
-                constants.databasePath,
-                constants.databaseDocumentsDir,
-                [],
-                true,
-                dataSource!,
-              );
-            });
-          });
-        });
-
-        describe('with database not available', () => {
-          beforeEach(async () => {
-            await dataSource!.destroy();
-          });
-
-          describe('for request that is correct', () => {
-            it('should 500, not alter database and return message that explains error cause', async () => {
-              await request(app!.getHttpServer())
-                .get('/documents')
-                .expect(500)
-                .expect({
-                  message:
-                    'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
-                  error: 'Internal Server Error',
-                  statusCode: 500,
-                });
-
-              await utils.expectDatabaseDocumentsState(
-                constants.databasePath,
-                constants.databaseDocumentsDir,
-                [],
-                false,
-                dataSource!,
-              );
-            });
-          });
-        });
-      });
-
-      describe('with database that already stores two documents', () => {
+      describe.each([
+        ['that is empty', false],
+        ['that already stores two documents', true],
+      ])('with database %s', (_, databaseShouldContainDocuments) => {
         beforeEach(async () => {
-          fixtures.firstDocument.id = 1;
-          fixtures.firstDocument.name = 'first-uploaded-file.pdf';
-          fixtures.firstDocument.path = constants.testDocument.pdf.path;
-          fixtures.firstDocument.keys = 'first-file-keys';
+          if (databaseShouldContainDocuments) {
+            fixtures.firstDocument.id = 1;
+            fixtures.firstDocument.name = 'first-uploaded-file.pdf';
+            fixtures.firstDocument.path = constants.testDocument.pdf.path;
+            fixtures.firstDocument.keys = 'first-file-keys';
 
-          await request(app!.getHttpServer())
-            .post('/documents')
-            .attach('file', fixtures.firstDocument.path)
-            .field('name', fixtures.firstDocument.name)
-            .field('keys', fixtures.firstDocument.keys)
-            .expect(201)
-            .expect({});
+            await request(app!.getHttpServer())
+              .post('/documents')
+              .attach('file', fixtures.firstDocument.path)
+              .field('name', fixtures.firstDocument.name)
+              .field('keys', fixtures.firstDocument.keys)
+              .expect(201)
+              .expect({});
 
-          fixtures.secondDocument.id = 2;
-          fixtures.secondDocument.name = 'second-uploaded-file.pdf';
-          fixtures.secondDocument.path = constants.testDocument.markdown.path;
-          fixtures.secondDocument.keys = 'second-file-keys';
+            fixtures.secondDocument.id = 2;
+            fixtures.secondDocument.name = 'second-uploaded-file.pdf';
+            fixtures.secondDocument.path = constants.testDocument.markdown.path;
+            fixtures.secondDocument.keys = 'second-file-keys';
 
-          await request(app!.getHttpServer())
-            .post('/documents')
-            .attach('file', fixtures.secondDocument.path)
-            .field('name', fixtures.secondDocument.name)
-            .field('keys', fixtures.secondDocument.keys)
-            .expect(201)
-            .expect({});
+            await request(app!.getHttpServer())
+              .post('/documents')
+              .attach('file', fixtures.secondDocument.path)
+              .field('name', fixtures.secondDocument.name)
+              .field('keys', fixtures.secondDocument.keys)
+              .expect(201)
+              .expect({});
+          }
         });
 
-        describe('with database available', () => {
-          describe('for request that is correct', () => {
-            it('should 200, not alter database and return list of documents', async () => {
-              await request(app!.getHttpServer())
-                .get('/documents')
-                .expect(200)
-                .expect([
-                  {
-                    id: 1,
-                    name: fixtures.firstDocument.name,
-                    keys: fixtures.firstDocument.keys,
-                  },
-                  {
-                    id: 2,
-                    name: fixtures.secondDocument.name,
-                    keys: fixtures.secondDocument.keys,
-                  },
-                ]);
-
-              await utils.expectDatabaseDocumentsState(
-                constants.databasePath,
-                constants.databaseDocumentsDir,
-                [fixtures.firstDocument, fixtures.secondDocument],
-                true,
-                dataSource!,
-              );
-            });
-          });
-        });
-
-        describe('with database not available', () => {
+        describe.each([
+          ['available', true],
+          ['not available', false],
+        ])('with database %s', (_, databaseShouldBeAvailable) => {
           beforeEach(async () => {
-            await dataSource!.destroy();
+            if (!databaseShouldBeAvailable) {
+              await dataSource!.destroy();
+            }
           });
 
           describe('for request that is correct', () => {
-            it('should 500, not alter database and return message that explains error cause', async () => {
-              await request(app!.getHttpServer())
-                .get('/documents')
-                .expect(500)
-                .expect({
-                  message:
-                    'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
-                  error: 'Internal Server Error',
-                  statusCode: 500,
-                });
+            if (databaseShouldBeAvailable) {
+              it('should 200, not alter database and return list of documents', async () => {
+                await request(app!.getHttpServer())
+                  .get('/documents')
+                  .expect(200)
+                  .expect(
+                    databaseShouldContainDocuments
+                      ? [
+                          {
+                            id: 1,
+                            name: fixtures.firstDocument.name,
+                            keys: fixtures.firstDocument.keys,
+                          },
+                          {
+                            id: 2,
+                            name: fixtures.secondDocument.name,
+                            keys: fixtures.secondDocument.keys,
+                          },
+                        ]
+                      : [],
+                  );
 
-              await utils.expectDatabaseDocumentsState(
-                constants.databasePath,
-                constants.databaseDocumentsDir,
-                [fixtures.firstDocument, fixtures.secondDocument],
-                false,
-                dataSource!,
-              );
-            });
+                await utils.expectDatabaseDocumentsState(
+                  constants.databasePath,
+                  constants.databaseDocumentsDir,
+                  databaseShouldContainDocuments
+                    ? [fixtures.firstDocument, fixtures.secondDocument]
+                    : [],
+                  true,
+                  dataSource!,
+                );
+              });
+            } else {
+              it('should 500, not alter database and return message that explains error cause', async () => {
+                await request(app!.getHttpServer())
+                  .get('/documents')
+                  .expect(500)
+                  .expect({
+                    message:
+                      'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+                    error: 'Internal Server Error',
+                    statusCode: 500,
+                  });
+
+                await utils.expectDatabaseDocumentsState(
+                  constants.databasePath,
+                  constants.databaseDocumentsDir,
+                  databaseShouldContainDocuments
+                    ? [fixtures.firstDocument, fixtures.secondDocument]
+                    : [],
+                  false,
+                  dataSource!,
+                );
+              });
+            }
           });
         });
       });
