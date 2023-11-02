@@ -85,105 +85,22 @@ describe('DocumentsController (e2e)', () => {
     // TODO: test /:id HEAD
 
     describe('/ (POST)', () => {
-      describe('with database that is empty', () => {
-        describe('with database available', () => {
-          describe('for request that is correct', () => {
-            it('should 201, store document in database and return nothing', async () => {
-              fixtures.firstDocument.id = 1;
-              fixtures.firstDocument.name = 'my-uploaded-file.pdf';
-              fixtures.firstDocument.path = constants.testDocument.pdf.path;
-              fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
-
-              await request(app!.getHttpServer())
-                .post('/documents')
-                .attach('file', fixtures.firstDocument.path)
-                .field('name', fixtures.firstDocument.name)
-                .field('keys', fixtures.firstDocument.keys)
-                .expect(201)
-                .expect({});
-
-              await utils.expectDatabaseDocumentsState(
-                constants.databasePath,
-                constants.databaseDocumentsDir,
-                [fixtures.firstDocument],
-                true,
-                dataSource!,
-              );
-            });
-          });
-        });
-      });
-
-      describe('with database that already stores a document', () => {
-        describe('with database available', () => {
-          describe.each([
-            ['different `name`, different `file` content and `keys`', true],
-            ['different `name`, same `file` content and `keys`', false],
-          ])(
-            'for request that is correct - %s',
-            (_, secondDocumentIsDifferent: boolean) => {
-              beforeEach(async () => {
-                fixtures.firstDocument.id = 1;
-                fixtures.firstDocument.name = 'my-uploaded-file-1.pdf';
-                fixtures.firstDocument.path = constants.testDocument.pdf.path;
-                fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
-
-                fixtures.secondDocument.id = 2;
-                fixtures.secondDocument.name = 'my-uploaded-file-2.md';
-                if (secondDocumentIsDifferent) {
-                  fixtures.secondDocument.path =
-                    constants.testDocument.markdown.path;
-                  fixtures.secondDocument.keys = 'aaaa-bbbb-cccc-dddd-eeee';
-                } else {
-                  fixtures.secondDocument.path = fixtures.firstDocument.path;
-                  fixtures.secondDocument.keys = fixtures.firstDocument.keys;
-                }
-
-                await request(app!.getHttpServer())
-                  .post('/documents')
-                  .attach('file', fixtures.firstDocument.path)
-                  .field('name', fixtures.firstDocument.name)
-                  .field('keys', fixtures.firstDocument.keys)
-                  .expect(201)
-                  .expect({});
-              });
-
-              it('should 201, store document in database and return nothing', async () => {
-                // TODO: When same file is uploaded twice (possibly under different name),
-                // that file should be shared/reused to save space.
-
-                await request(app!.getHttpServer())
-                  .post('/documents')
-                  .attach('file', fixtures.secondDocument.path!)
-                  .field('name', fixtures.secondDocument.name!)
-                  .field('keys', fixtures.secondDocument.keys!)
-                  .expect(201)
-                  .expect({});
-
-                await utils.expectDatabaseDocumentsState(
-                  constants.databasePath,
-                  constants.databaseDocumentsDir,
-                  [fixtures.firstDocument, fixtures.secondDocument],
-                  true,
-                  dataSource!,
-                );
-              });
-            },
-          );
-        });
-      });
-
       describe.each([
         ['that is empty', false],
         ['that already stores a document', true],
-      ])('with database %s', (_, databaseShouldContainDocument: boolean) => {
+      ])('with database %s', (_, databaseShouldContainDocument) => {
         beforeEach(async () => {
-          if (databaseShouldContainDocument) {
-            fixtures.firstDocument.id = 1;
-            fixtures.firstDocument.name = 'my-uploaded-file.pdf';
-            fixtures.firstDocument.path = constants.testDocument.pdf.path;
-            fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
+          fixtures.firstDocument.id = 1;
+          fixtures.firstDocument.name = 'first-uploaded-file.pdf';
+          fixtures.firstDocument.path = constants.testDocument.pdf.path;
+          fixtures.firstDocument.keys = 'first-file-keys';
 
+          fixtures.secondDocument.id = 2;
+          fixtures.secondDocument.name = 'second-uploaded-file.md';
+          fixtures.secondDocument.path = constants.testDocument.markdown.path;
+          fixtures.secondDocument.keys = 'second-file-keys';
+
+          if (databaseShouldContainDocument) {
             await request(app!.getHttpServer())
               .post('/documents')
               .attach('file', fixtures.firstDocument.path)
@@ -192,45 +109,119 @@ describe('DocumentsController (e2e)', () => {
               .expect(201)
               .expect({});
           }
-
-          fixtures.secondDocument.id = 2;
-          fixtures.secondDocument.name = 'my-uploaded-file.md';
-          fixtures.secondDocument.path = constants.testDocument.markdown.path;
-          fixtures.secondDocument.keys = 'aaaa-bbbb-cccc-dddd-eeee';
         });
 
-        describe('with database not available', () => {
+        describe.each([
+          ['available', true],
+          ['not available', false],
+        ])('with database %s', (_, databaseShouldBeAvailable) => {
           beforeEach(async () => {
-            await dataSource!.destroy();
+            if (!databaseShouldBeAvailable) {
+              await dataSource!.destroy();
+            }
           });
 
-          describe('for request that is correct', () => {
-            it('should 500, not alter database and return message that explains error cause', async () => {
-              // NOTE: maybe 503 would be better but MDN says it needs a few extra things
-              // that I don't want to implement and feel are not crucial for now.
+          if (databaseShouldBeAvailable) {
+            if (!databaseShouldContainDocument) {
+              describe('for request that is correct', () => {
+                it('should 201, store document in database and return nothing', async () => {
+                  fixtures.firstDocument.id = 1;
+                  fixtures.firstDocument.name = 'my-uploaded-file.pdf';
+                  fixtures.firstDocument.path = constants.testDocument.pdf.path;
+                  fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
 
-              await request(app!.getHttpServer())
-                .post('/documents')
-                .attach('file', fixtures.secondDocument.path!)
-                .field('name', fixtures.secondDocument.name!)
-                .field('keys', fixtures.secondDocument.keys!)
-                .expect(500)
-                .expect({
-                  statusCode: 500,
-                  error: 'Internal Server Error',
-                  message:
-                    'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+                  await request(app!.getHttpServer())
+                    .post('/documents')
+                    .attach('file', fixtures.firstDocument.path)
+                    .field('name', fixtures.firstDocument.name)
+                    .field('keys', fixtures.firstDocument.keys)
+                    .expect(201)
+                    .expect({});
+
+                  await utils.expectDatabaseDocumentsState(
+                    constants.databasePath,
+                    constants.databaseDocumentsDir,
+                    [fixtures.firstDocument],
+                    true,
+                    dataSource!,
+                  );
                 });
+              });
+            }
 
-              await utils.expectDatabaseDocumentsState(
-                constants.databasePath,
-                constants.databaseDocumentsDir,
-                databaseShouldContainDocument ? [fixtures.firstDocument] : [],
-                false,
-                dataSource!,
+            if (databaseShouldContainDocument) {
+              describe.each([
+                ['different `name`, different `file` content and `keys`', true],
+                ['different `name`, same `file` content and `keys`', false],
+              ])(
+                'for request that is correct - %s',
+                (_, secondDocumentIsDifferent: boolean) => {
+                  beforeEach(async () => {
+                    if (!secondDocumentIsDifferent) {
+                      fixtures.secondDocument.path =
+                        fixtures.firstDocument.path;
+
+                      fixtures.secondDocument.keys =
+                        fixtures.firstDocument.keys;
+                    }
+                  });
+
+                  it('should 201, store document in database and return nothing', async () => {
+                    // TODO: When same file is uploaded twice (possibly under different name),
+                    // that file should be shared/reused to save space.
+
+                    await request(app!.getHttpServer())
+                      .post('/documents')
+                      .attach('file', fixtures.secondDocument.path!)
+                      .field('name', fixtures.secondDocument.name!)
+                      .field('keys', fixtures.secondDocument.keys!)
+                      .expect(201)
+                      .expect({});
+
+                    await utils.expectDatabaseDocumentsState(
+                      constants.databasePath,
+                      constants.databaseDocumentsDir,
+                      [fixtures.firstDocument, fixtures.secondDocument],
+                      true,
+                      dataSource!,
+                    );
+                  });
+                },
               );
+            }
+          }
+
+          if (!databaseShouldBeAvailable) {
+            describe('for request that is correct', () => {
+              it('should 500, not alter database and return message that explains error cause', async () => {
+                // NOTE: maybe 503 would be better but MDN says it needs a few extra things
+                // that I don't want to implement and feel are not crucial for now.
+
+                await request(app!.getHttpServer())
+                  .post('/documents')
+                  .attach('file', fixtures.secondDocument.path!)
+                  .field('name', fixtures.secondDocument.name!)
+                  .field('keys', fixtures.secondDocument.keys!)
+                  .expect(500)
+                  .expect({
+                    statusCode: 500,
+                    error: 'Internal Server Error',
+                    message:
+                      'This operation is temporarily unavailable due to some database service problem on our end, please try again later.',
+                  });
+
+                await utils.expectDatabaseDocumentsState(
+                  constants.databasePath,
+                  constants.databaseDocumentsDir,
+                  databaseShouldContainDocument ? [fixtures.firstDocument] : [],
+                  false,
+                  dataSource!,
+                );
+              });
             });
-          });
+          }
+
+          // DODO
         });
       });
 
