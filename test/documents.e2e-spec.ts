@@ -119,6 +119,16 @@ describe('DocumentsController (e2e)', () => {
             if (!databaseShouldBeAvailable) {
               await dataSource!.destroy();
             }
+
+            helpers.expectDatabaseWasNotAltered = async () => {
+              await utils.expectDatabaseDocumentsState(
+                constants.databasePath,
+                constants.databaseDocumentsDir,
+                databaseShouldContainDocument ? [fixtures.firstDocument] : [],
+                databaseShouldBeAvailable,
+                dataSource!,
+              );
+            };
           });
 
           if (databaseShouldBeAvailable) {
@@ -220,55 +230,6 @@ describe('DocumentsController (e2e)', () => {
               });
             });
           }
-
-          // DODO
-        });
-      });
-
-      describe.each([
-        ['that is empty', false],
-        ['that already stores a document', true],
-      ])('with database %s', (_, databaseShouldContainDocument: boolean) => {
-        beforeEach(async () => {
-          if (databaseShouldContainDocument) {
-            fixtures.firstDocument.id = 1;
-            fixtures.firstDocument.name = 'my-uploaded-file.pdf';
-            fixtures.firstDocument.path = constants.testDocument.pdf.path;
-            fixtures.firstDocument.keys = 'aaaa-bbbb-cccc-dddd';
-
-            await request(app!.getHttpServer())
-              .post('/documents')
-              .attach('file', fixtures.firstDocument.path)
-              .field('name', fixtures.firstDocument.name)
-              .field('keys', fixtures.firstDocument.keys)
-              .expect(201)
-              .expect({});
-          }
-
-          fixtures.secondDocument.name = 'my-uploaded-file.md';
-          fixtures.secondDocument.path = constants.testDocument.markdown.path;
-          fixtures.secondDocument.keys = 'aaaa-bbbb-cccc-dddd-eeee';
-        });
-
-        describe.each([
-          ['available', true],
-          ['not available', false],
-        ])('with database %s', (_, databaseShouldBeAvailable: boolean) => {
-          beforeEach(async () => {
-            if (!databaseShouldBeAvailable) {
-              await dataSource!.destroy();
-            }
-
-            helpers.expectDatabaseWasNotAltered = async () => {
-              await utils.expectDatabaseDocumentsState(
-                constants.databasePath,
-                constants.databaseDocumentsDir,
-                databaseShouldContainDocument ? [fixtures.firstDocument] : [],
-                databaseShouldBeAvailable,
-                dataSource!,
-              );
-            };
-          });
 
           describe('for request that is not a multipart/form-data', () => {
             describe('for request that has Content-Type application/json and `file` field', () => {
