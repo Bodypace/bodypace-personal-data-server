@@ -62,13 +62,13 @@ If you don't have `curl` installed, enter above address into web browser, effect
 
 ## Questions / Contact
 
-The issues list of this repo is **exclusively** for bug reports and feature requests. If you have any questions, want to discuss something or need support, do not hesitate to write to us - email: rdorna8@gmail.com.
+The issues list of this repo is for bug reports and feature requests, but also questions. Therefore, if you need support or want to discuss something, simply [create a question](https://github.com/Bodypace/bodypace-personal-data-server/issues/new). Alternatively, do not hesitate to write to us - email: rdorna8@gmail.com.
 
 ## Contributing
 
 First of all, thank you for considering taking the time to help develop this project!
 
-In [CONTRIBUTING.md](Contributing.md) you will find all necessary informations, including:
+In [CONTRIBUTING.md](docs/CONTRIBUTING.md) you will find all necessary informations, including:
 - how to setup project for development
 - how project is structured
 - how to make sure your code is matching our quality requirements
