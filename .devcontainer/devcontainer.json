@@ -8,7 +8,8 @@
         "streetsidesoftware.code-spell-checker",
         "usernamehw.errorlens",
         "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "orta.vscode-jest"
       ]
     }
   },
