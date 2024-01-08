@@ -1,0 +1,914 @@
+PASSED src/modules/accounts/accounts.controller.spec.ts
+  AccountsController
+    ✓ controller should be defined
+    ✓ accountsService should be defined
+    register()
+      with accountsService#register() that returns undefined
+        ✓ should forward call to accountsService#register() and return nothing
+      with accountsService#register() that returns null
+        ✓ should forward call to accountsService#register() and return nothing
+      with accountsService#register() that returns some string
+        ✓ should forward call to accountsService#register() and return nothing
+      with accountsService#register() that returns { someKey: 'some value' }
+        ✓ should forward call to accountsService#register() and return nothing
+      with accountsService#register() that throws error
+        ✓ should forward call to accountsService#register() and forward error
+    login()
+      with accountsService#login() that returns undefined
+        ✓ should forward call to accountsService#login() and forward return value
+      with accountsService#login() that returns null
+        ✓ should forward call to accountsService#login() and forward return value
+      with accountsService#login() that returns some string
+        ✓ should forward call to accountsService#login() and forward return value
+      with accountsService#login() that returns { someKey: 'some value' }
+        ✓ should forward call to accountsService#login() and forward return value
+      with accountsService#login() that throws error (random Error)
+        ✓ should forward call to accountsService#login() and throw database 500 error
+      with accountsService#login() that throws error (401 UnauthorizedException)
+        ✓ should forward call to accountsService#login() and forward unauthorized 401 error
+    getProfile()
+      ✓ TODO
+      ✓ should return user object attached to request by AuthGuard
+PASSED src/modules/accounts/accounts.service.spec.ts
+  AccountsService
+    ✓ service should be defiend
+    ✓ databaseService should be defiend
+    ✓ jwtService should be defined
+    register()
+      with bcrypt#hash() that throws error
+        ✓ should call bcrypt#hash() and forward error
+      with databaseService#create() that returns null
+        ✓ should hash password, call databaseService#create(), and return nothing
+      with databaseService#create() that returns undefined
+        ✓ should hash password, call databaseService#create(), and return nothing
+      with databaseService#create() that returns some string value
+        ✓ should hash password, call databaseService#create(), and return nothing
+      with databaseService#create() that returns { someKey: 'some value' }
+        ✓ should hash password, call databaseService#create(), and return nothing
+      with databaseService#create() that throws error
+        ✓ should hash password, call databaseService#create(), and forward error
+    login()
+      with databaseService#findOne() that returns an account with matching password hash
+        ✓ should call databaseService#findOne() with username, call bcrypt#compare() and return retrived access token from jwtService#signAsync()
+      with databaseService#findOne() that returns an account with different password hash
+        ✓ should call databaseService#findOne() with username, call bcrypt#compare() and throw UnauthorizedException
+      with databaseService#findOne() that returns an account and bcrypt#compare() that throws error
+        ✓ should call databaseService#findOne() with username, call bcrypt#compare() and forward error
+      with databaseService#findOne() that returns null
+        ✓ should call databaseService#findOne() with username and throw UnauthorizedException
+      with databaseService#findOne() that throws error
+        ✓ should call databaseService#findOne() with password and forward error
+PASSED src/modules/accounts/guards/auth.guard.spec.ts
+  AuthGuard
+    ✓ guard should be defined
+    ✓ mocks should be defined
+    canActivate()
+      for request with valid Authorization header
+        with JwtService#varifyAsync() that passes
+          ✓ should extract token from HTTP request, fetch JWT secret from env, verify token with JwtService#verifyAsync(), assign token payload to request["user"] and return true
+        with JwtService#verifyAsync() that fails
+          ✓ should extract token from HTTP request, fetch JWT secret from env, verify token with JwtService#verifyAsync() and throw UnauthorizedException
+      for request with invalid Authorization header - not "Bearer"
+        ✓ should extract token from HTTP request and throw UnauthorizedException
+      for request with invalid Authorization header - missing token
+        ✓ should extract token from HTTP request and throw UnauthorizedException
+      for request with invalid Authorization header - missing "Bearer"
+        ✓ should extract token from HTTP request and throw UnauthorizedException
+      for request with invalid Authorization header - empty string
+        ✓ should extract token from HTTP request and throw UnauthorizedException
+      for request with no Authorization header
+        ✓ should extract token from HTTP request and throw UnauthorizedException
+PASSED src/modules/accounts/modules/database/database.service.spec.ts
+  AccountsDatabaseService
+    ✓ service should be defined
+    ✓ dataSource should be defined
+    create()
+      with database that is empty
+        with database available
+          for correct username and password
+            ✓ should store new account in database and return nothing
+          for username that is an empty string
+            ✓ should not alter database and throw descriptive error
+          for password that is an empty string
+            ✓ should not alter database and throw descriptive error
+          for username and password both being empty string
+            ✓ should not alter database and throw descriptive error
+        with database not available
+          for correct username and password
+            ✓ should not alter database and throw descriptive error
+          for username that is an empty string
+            ✓ should not alter database and throw descriptive error
+          for password that is an empty string
+            ✓ should not alter database and throw descriptive error
+          for username and password both being empty string
+            ✓ should not alter database and throw descriptive error
+      with database that already stores account
+        with database available
+          for correct username and password
+            ✓ should store new account in database and return nothing
+          for correct password but username is already taken
+            ✓ should not alter database and throw descriptive error
+          for username that is an empty string
+            ✓ should not alter database and throw descriptive error
+          for password that is an empty string
+            ✓ should not alter database and throw descriptive error
+          for username and password both being empty string
+            ✓ should not alter database and throw descriptive error
+        with database not available
+          for correct username and password
+            ✓ should not alter database and throw descriptive error
+          for correct password but username is already taken
+            ✓ should not alter database and throw descriptive error
+          for username that is an empty string
+            ✓ should not alter database and throw descriptive error
+          for password that is an empty string
+            ✓ should not alter database and throw descriptive error
+          for username and password both being empty string
+            ✓ should not alter database and throw descriptive error
+    findOne()
+      with database that is empty
+        with database available
+          for unknown username
+            ✓ should not alter database and return null
+          for username being empty string
+            ✓ should not alter database and throw descriptive error
+        with database not available
+          for unknown username
+            ✓ should not alter database and throw descriptive error
+          for username being empty string
+            ✓ should not alter database and throw descriptive error
+      with database that already stores accounts
+        with database available
+          for known username - first-user
+            ✓ should not alter database and return matching account
+          for known username - second-user
+            ✓ should not alter database and return matching account
+          for unknown username
+            ✓ should not alter database and return null
+          for username being empty string
+            ✓ should not alter database and throw descriptive error
+        with database not available
+          for known username - first-user
+            ✓ should not alter database and throw descriptive error
+          for known username - second-user
+            ✓ should not alter database and throw descriptive error
+          for unknown username
+            ✓ should not alter database and throw descriptive error
+          for username being empty string
+            ✓ should not alter database and throw descriptive error
+PASSED src/modules/documents/documents.controller.spec.ts
+  DocumentsController
+    ✓ should be defined
+    ✓ documentsService should be defined
+    create()
+      ✓ should call documentsService#create() with received data and forward result
+    findAll()
+      ✓ should call documentsService#findAll() and forward result
+    findOne()
+      for correct document id
+        ✓ should call documentsService#findOne() with received data, set header accordingly to returned document and return StreamableFile 
+      for unknown document id
+        ✓ should call documentsService#findOne() with received data and for null response throw NotFoundException (404)
+    remove()
+      ✓ should call documentsService#remove() with received data and forward result
+PASSED src/modules/documents/documents.service.spec.ts
+  DocumentsService
+    ✓ service should be defined
+    ✓ service should use database/documents as storagePath
+    ✓ dataSource should be defined
+    create()
+      with database that is empty
+        with database available
+          for correct arguments
+            ✓ should store new document in database and return nothing
+          for incorrect name - ""
+            ✓ should not alter database and throw error with correct message
+          for incorrect keys - ""
+            ✓ should not alter database and throw error with correct message
+        with database not available
+          for incorrect name - ""
+            ✓ should not alter database and throw error with correct message
+          for incorrect keys - ""
+            ✓ should not alter database and throw error with correct message
+      with database that already stores document
+        with database available
+          for correct arguments
+            ✓ should store new document in database and return nothing
+          for correct arguments - same file under different name
+            ✓ should store document again in database, not reuse it, and return nothing
+          for incorrect name - already taken
+            ✓ should not alter database and throw error with correct message
+          for incorrect name - ""
+            ✓ should not alter database and throw error with correct message
+          for incorrect keys - ""
+            ✓ should not alter database and throw error with correct message
+        with database not available
+          for incorrect name - already taken
+            ✓ should not alter database and throw error with correct message
+          for incorrect name - ""
+            ✓ should not alter database and throw error with correct message
+          for incorrect keys - ""
+            ✓ should not alter database and throw error with correct message
+    findAll()
+      with database that is empty
+        with database available
+          ✓ should not alter database and return a list of stored documents
+        with database not available
+          ✓ should not alter database and throw error which explains that db is not accessible
+      with database that already stores two documents
+        with database available
+          ✓ should not alter database and return a list of stored documents
+        with database not available
+          ✓ should not alter database and throw error which explains that db is not accessible
+    findOne()
+      with database that is empty
+        with database available
+          for unknown document id
+            ✓ should not alter database and return null
+        with database not available
+          for document id - 1
+            ✓ should not alter database and return error which explains that db is not accessible
+          for document id - 2
+            ✓ should not alter database and return error which explains that db is not accessible
+          for document id - 3
+            ✓ should not alter database and return error which explains that db is not accessible
+      with database that already stores two documents
+        with database available
+          with first document id
+            ✓ should not alter database and return selected document
+          with second document id
+            ✓ should not alter database and return selected document
+          for unknown document id - decimal 1.001
+            ✓ should not alter database and return null
+          for unknown document id
+            ✓ should not alter database and return null
+        with database not available
+          for document id - 1
+            ✓ should not alter database and return error which explains that db is not accessible
+          for document id - 2
+            ✓ should not alter database and return error which explains that db is not accessible
+          for document id - 3
+            ✓ should not alter database and return error which explains that db is not accessible
+    remove()
+      with database that is empty
+        with database available
+          for unknown document id
+            ✓ should not alter database and throw error which explains that document id is unknown
+        with database not available
+          for document id - 1
+            ✓ should not alter database and throw error which explains that db is not accessible
+          for document id - 2
+            ✓ should not alter database and throw error which explains that db is not accessible
+          for document id - 3
+            ✓ should not alter database and throw error which explains that db is not accessible
+      with database that already stores two documents
+        with database available
+          with first document id
+            ✓ should remove selected document from database and return nothing
+          with second document id
+            ✓ should remove selected document from database and return nothing
+          for unknown document id - decimal 1.001
+            ✓ should not alter database and throw error which explains that document id is unknown
+          for unknown document id
+            ✓ should not alter database and throw error which explains that document id is unknown
+        with database not available
+          for document id - 1
+            ✓ should not alter database and throw error which explains that db is not accessible
+          for document id - 2
+            ✓ should not alter database and throw error which explains that db is not accessible
+          for document id - 3
+            ✓ should not alter database and throw error which explains that db is not accessible
+PASSED test/accounts.e2e-spec.ts
+  AccountsController (e2e)
+    ✓ dataSource should be defined
+    /accounts
+      /register
+        / (POST)
+          with database that is empty
+            with database available
+              for request with correct username and password
+                ✓ should 201, create new account and return nothing
+              for request with additional unknown field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `Username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `USERNAME`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `usename`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `Password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `PASSWORD`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `passwrod`
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with `username` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with missing `username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with missing `password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing both `username` and `password`
+                ✓ should 400, not alter database and return message that explains error cause
+            with database not available
+              for request with correct username and password
+                ✓ should 500, not alter database and return message that explains error cause
+              for request with additional unknown field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `Username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `USERNAME`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `usename`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `Password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `PASSWORD`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `passwrod`
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with `username` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with missing `username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with missing `password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing both `username` and `password`
+                ✓ should 400, not alter database and return message that explains error cause
+          with database that already stores an account
+            with database available
+              for request with correct username and password
+                ✓ should 201, create new account and return nothing
+              for request with correct password and already taken username
+                ✓ should 409, not alter database and return message that explains error cause
+              for request with correct password and already taken username but different case
+                ✓ should 201, create new account and return nothing
+              for request with additional unknown field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `Username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `USERNAME`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `usename`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `Password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `PASSWORD`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `passwrod`
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with `username` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with missing `username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with missing `password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing both `username` and `password`
+                ✓ should 400, not alter database and return message that explains error cause
+            with database not available
+              for request with correct username and password
+                ✓ should 500, not alter database and return message that explains error cause
+              for request with correct password and already taken username
+                ✓ should 500, not alter database and return message that explains error cause
+              for request with additional unknown field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `Username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `USERNAME`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` instead of `usename`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `Password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `PASSWORD`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` instead of `passwrod`
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with `username` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with missing `username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for reqeust with missing `password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing both `username` and `password`
+                ✓ should 400, not alter database and return message that explains error cause
+      /login
+        / (POST)
+          with database that is empty
+            with database available
+              for request with incorrect credentials
+                ✓ should 401, not alter database and return message that explains error cause
+              for request with `username` replaced by `Username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` replaced by `USERNAME`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` replaced by `usernme`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `Password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `PASSWORD`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `passwrd`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with extra field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` and `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `username` and `password`
+                ✓ should 400, not alter database and return message that explains error cause
+            with database not available
+              for request with incorrect credentials
+                ✓ should 500, not alter database and return message that explains error cause
+              for request with `username` replaced by `Username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` replaced by `USERNAME`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` replaced by `usernme`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `Password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `PASSWORD`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `passwrd`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with extra field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` and `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `username` and `password`
+                ✓ should 400, not alter database and return message that explains error cause
+          with database that already stores two accounts
+            with database available
+              for request with correct credentials - first account
+                ✓ should 201, not alter database and return access token
+              for request with correct credentials - second account
+                ✓ should 201, not alter database and return access token
+              for two requests with correct credentials - same account twice - no wait
+                ✓ should 201, not alter database and return access token (twice, same tokens)
+              for two requests with correct credentials - same account twice - wait 1 sec
+                ✓ should 201, not alter database and return access token (twice, different tokens)
+              for two requests with correct credentials - different accounts - no wait
+                ✓ should 201, not alter database and return access token (twice, different tokens)
+              for two requests with correct credentials - different accounts - wait 1 sec
+                ✓ should 201, not alter database and return access token (twice, different tokens)
+              for request with correct `username` and incorrect `password`
+                ✓ should 401, not alter database and return message that explains error cause
+              for request with correct `password` and incorrect `username`
+                ✓ should 401, not alter database and return message that explains error cause
+              for request with incorrect credentials
+                ✓ should 401, not alter database and return message that explains error cause
+              for request with `username` replaced by `Username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` replaced by `USERNAME`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` replaced by `usernme`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `Password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `PASSWORD`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `passwrd`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with extra field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` and `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `username` and `password`
+                ✓ should 400, not alter database and return message that explains error cause
+            with database not available
+              for request with correct credentials - first account
+                ✓ should 500, not alter database and return message that explains error cause
+              for request with correct credentials - second account
+                ✓ should 500, not alter database and return message that explains error cause
+              for request with incorrect credentials
+                ✓ should 500, not alter database and return message that explains error cause
+              for request with `username` replaced by `Username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` replaced by `USERNAME`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` replaced by `usernme`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `Password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `PASSWORD`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` replaced by `passwrd`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with extra field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with `username` and `password` set to empty string
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `username`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `password`
+                ✓ should 400, not alter database and return message that explains error cause
+              for request with missing `username` and `password`
+                ✓ should 400, not alter database and return message that explains error cause
+      / (GET)
+        with database that is empty
+          with database available
+            for request with invalid token - incorrect value
+              ✓ should 401, not alter database and return message that explains error cause
+            for request with invalid token - empty string
+              ✓ should 401, not alter database and return message that explains error cause
+            for request with no token
+              ✓ should 401, not alter database and return message that explains error cause
+          with database not available
+            for request with invalid token - incorrect value
+              ✓ should 401, not alter database and return message that explains error cause
+            for request with invalid token - empty string
+              ✓ should 401, not alter database and return message that explains error cause
+            for request with no token
+              ✓ should 401, not alter database and return message that explains error cause
+        with database that already stores two accounts
+          with database available
+            for request with valid token - first account
+              ✓ should 200, not alter database and return selected account token info
+            for request with valid token - second account
+              ✓ should 200, not alter database and return selected account token info
+            for request with invalid token - incorrect value
+              ✓ should 401, not alter database and return message that explains error cause
+            for request with invalid token - empty string
+              ✓ should 401, not alter database and return message that explains error cause
+            for request with no token
+              ✓ should 401, not alter database and return message that explains error cause
+          with database not available
+            for request with valid token - first account
+              ✓ should 200, not alter database and return selected account token info
+            for request with valid token - second account
+              ✓ should 200, not alter database and return selected account token info
+            for request with invalid token - incorrect value
+              ✓ should 401, not alter database and return message that explains error cause
+            for request with invalid token - empty string
+              ✓ should 401, not alter database and return message that explains error cause
+            for request with no token
+              ✓ should 401, not alter database and return message that explains error cause
+PASSED test/documents.e2e-spec.ts
+  DocumentsController (e2e)
+    ✓ dataSource should be defined
+    /documents
+      / (POST)
+        with database that is empty
+          with database available
+            for request that is correct
+              ✓ should 201, store document in database and return nothing
+            for request that is not a multipart/form-data
+              for request that has Content-Type application/json and `file` field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request that has Content-Type application/json and no `file` field
+                ✓ should 415, not alter database and return message that explains error cause
+            for request with `Name` field instead of `name`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `NAME` field instead of `name`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `name` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with empty `name` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `File` field instead of `file`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `FILE` field instead of `file`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `file` field (no file attached/uploading)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `file` field that is not a file
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `file` that uploads empty file
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `Keys` field instead of `keys`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `KEYS` field instead of `keys`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `keys` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with empty `keys` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `Field`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `key`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `type`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field ` `
+              ✓ should 400, not alter database and return message that explains error cause
+          with database not available
+            for request that is correct
+              ✓ should 500, not alter database and return message that explains error cause
+            for request that is not a multipart/form-data
+              for request that has Content-Type application/json and `file` field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request that has Content-Type application/json and no `file` field
+                ✓ should 415, not alter database and return message that explains error cause
+            for request with `Name` field instead of `name`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `NAME` field instead of `name`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `name` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with empty `name` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `File` field instead of `file`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `FILE` field instead of `file`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `file` field (no file attached/uploading)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `file` field that is not a file
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `file` that uploads empty file
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `Keys` field instead of `keys`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `KEYS` field instead of `keys`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `keys` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with empty `keys` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `Field`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `key`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `type`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field ` `
+              ✓ should 400, not alter database and return message that explains error cause
+        with database that already stores a document
+          with database available
+            for request that is correct - different `name`, different `file` content and `keys`
+              ✓ should 201, store document in database and return nothing
+            for request that is correct - different `name`, same `file` content and `keys`
+              ✓ should 201, store document in database and return nothing
+            for request that is not a multipart/form-data
+              for request that has Content-Type application/json and `file` field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request that has Content-Type application/json and no `file` field
+                ✓ should 415, not alter database and return message that explains error cause
+            for request with `Name` field instead of `name`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `NAME` field instead of `name`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `name` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with empty `name` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `File` field instead of `file`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `FILE` field instead of `file`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `file` field (no file attached/uploading)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `file` field that is not a file
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `file` that uploads empty file
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `Keys` field instead of `keys`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `KEYS` field instead of `keys`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `keys` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with empty `keys` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `Field`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `key`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `type`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field ` `
+              ✓ should 400, not alter database and return message that explains error cause
+          with database not available
+            for request that is correct
+              ✓ should 500, not alter database and return message that explains error cause
+            for request that is not a multipart/form-data
+              for request that has Content-Type application/json and `file` field
+                ✓ should 400, not alter database and return message that explains error cause
+              for request that has Content-Type application/json and no `file` field
+                ✓ should 415, not alter database and return message that explains error cause
+            for request with `Name` field instead of `name`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `NAME` field instead of `name`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `name` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with empty `name` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `File` field instead of `file`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `FILE` field instead of `file`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `file` field (no file attached/uploading)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `file` field that is not a file
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `file` that uploads empty file
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `Keys` field instead of `keys`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with `KEYS` field instead of `keys`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with missing `keys` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with empty `keys` field
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `Field`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `key`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field `type`
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with additional unknown field ` `
+              ✓ should 400, not alter database and return message that explains error cause
+      /:id (POST)
+        with database that is empty
+          with database available
+            for request that is correct
+              ✓ should 404, not alter database and return message that explains error cause 
+      / (GET)
+        with database that is empty
+          with database available
+            for request that is correct
+              ✓ should 200, not alter database and return list of documents
+          with database not available
+            for request that is correct
+              ✓ should 500, not alter database and return message that explains error cause
+        with database that already stores two documents
+          with database available
+            for request that is correct
+              ✓ should 200, not alter database and return list of documents
+          with database not available
+            for request that is correct
+              ✓ should 500, not alter database and return message that explains error cause
+      /:id (GET)
+        with database that is empty
+          with database available
+            for request with unknown id
+              ✓ should 404, not alter database and return "404 Not Found" response
+            for request with negative number id
+              ✓ should 404, not alter database and return "404 Not Found" response
+            for request with 0 as id (we count from 1)
+              ✓ should 404, not alter database and return "404 Not Found" response
+            for request with string as id
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (1.0)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (1.1)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (3.0)
+              ✓ should 400, not alter database and return message that explains error cause
+          with database not available
+            for request with unknown id
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with negative number id
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with 0 as id (we count from 1)
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with string as id
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (1.0)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (1.1)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (3.0)
+              ✓ should 400, not alter database and return message that explains error cause
+        with database that already stores two documents
+          with database available
+            for request that is correct (first document id - 1)
+              ✓ should 200, not alter database and download correct document
+            for request that is correct technically (first document id - 001)
+              ✓ should 200, not alter database and download correct document
+            for request that is correct (second document id - 2)
+              ✓ should 200, not alter database and download correct document
+            for request with unknown id
+              ✓ should 404, not alter database and return "404 Not Found" response
+            for request with negative number id
+              ✓ should 404, not alter database and return "404 Not Found" response
+            for request with 0 as id (we count from 1)
+              ✓ should 404, not alter database and return "404 Not Found" response
+            for request with string as id
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (1.0)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (1.1)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (3.0)
+              ✓ should 400, not alter database and return message that explains error cause
+          with database not available
+            for request that is correct (first document id - 1)
+              ✓ should 500, not alter database and return message that explains error cause
+            for request that is correct technically (first document id - 001)
+              ✓ should 500, not alter database and return message that explains error cause
+            for request that is correct (second document id - 2)
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with unknown id
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with negative number id
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with 0 as id (we count from 1)
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with string as id
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (1.0)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (1.1)
+              ✓ should 400, not alter database and return message that explains error cause
+            for request with floating point number as id (3.0)
+              ✓ should 400, not alter database and return message that explains error cause
+      / (DELETE)
+        with database that is empty
+          with database available
+            for request that is correct
+              ✓ should 404, not alter database and return message that explains error cause
+          with database not available
+            for request that is correct
+              ✓ should 404, not alter database and return message that explains error cause
+        with database that already stores two documents
+          with database available
+            for request that is correct
+              ✓ should 404, not alter database and return message that explains error cause
+          with database not available
+            for request that is correct
+              ✓ should 404, not alter database and return message that explains error cause
+      /:id (DELETE)
+        with database that is empty
+          with database available
+            for request with unknown document id
+              ✓ should 200, not alter database and return nothing 
+          with database not available
+            for request with document id (1)
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with document id (2)
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with document id (3)
+              ✓ should 500, not alter database and return message that explains error cause
+        with database that already stores two documents
+          with database available
+            for request with known document id (1)
+              ✓ should 200, remove only mentioned document from database and return nothing
+            for request with known document id (2)
+              ✓ should 200, remove only mentioned document from database and return nothing
+            for request with unknown document id
+              ✓ should 200, not alter database and return nothing 
+          with database not available
+            for request with document id (1)
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with document id (2)
+              ✓ should 500, not alter database and return message that explains error cause
+            for request with document id (3)
+              ✓ should 500, not alter database and return message that explains error cause
+
+Test Suites: 8 passed, 8 total, 0 failed, 0 pending, 0 runtime error
+Tests: 392 passed, 392 total, 0 failed, 0 pending, 0 todo
+Snapshots: [
+  [ false, 'failure' ],
+  [ false, 'didUpdate' ],
+  [ 0, 'total' ],
+  [ 0, 'matched' ],
+  [ 0, 'updated' ],
+  [ 0, 'added' ],
+  [ 0, 'unchecked' ],
+  [ 0, 'unmatched' ],
+  [ 0, 'filesAdded' ],
+  [ 0, 'filesRemoved' ],
+  [ 0, 'filesUnmatched' ],
+  [ 0, 'filesUpdated' ]
+]
+Success: true (was interrupted: false )
+note: this entire log was generated by script from `jest --json` output
