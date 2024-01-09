@@ -9,7 +9,10 @@
         "usernamehw.errorlens",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
-        "orta.vscode-jest"
+        "orta.vscode-jest",
+        "github.vscode-github-actions",
+        "github.copilot",
+        "github.copilot-chat"
       ]
     }
   },
