@@ -6,6 +6,7 @@
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
+    "prepare": "git config core.hooksPath .git-hooks",
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -14,6 +15,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"utils/**/*.mjs\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"utils/**/*.mjs\"",
     "lint": "eslint \"{src,apps,libs,test,utils}/**/*.{ts,mjs}\" --fix",
+    "lint:check": "eslint \"{src,apps,libs,test,utils}/**/*.{ts,mjs}\"",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

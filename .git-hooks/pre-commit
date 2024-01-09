@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+echo 'running pre-commit hook!'
+echo 'this hook will:'
+echo '  1 - run lint check (`npm run lint:check`)'
+echo '  2 - run format check (`npm run format:check`)'
+echo '  3 - run all tests and store the output without time durations in logs/test.log (`npm run test:all:log`)'
+echo '  4 - add logs/test.log to the commit (CI pipiline fails if you push a commit with outdated logs/test.log)'
+echo 'if you do not want to run all of this, run git commit with --no-verify'
+
+npm run lint:check
+npm run format:check
+npm run test:all:log
+git add logs/test.log

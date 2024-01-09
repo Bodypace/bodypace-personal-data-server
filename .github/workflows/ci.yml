@@ -1,0 +1,26 @@
+name: 'CI'
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run lint:check
+      - run: npm run format:check
+      - name: Rename logs so that they won't be overwritten by the next step
+        run: mv logs/test.log logs/pushed-test.log && mv logs/test.json logs/pushed-test.json
+      - run: npm run test:all:log
+      - name: Compare logs
+        run: |
+          if ! cmp -s logs/test.log logs/pushed-test.log; then
+            echo "Files logs/test.log and logs/pushed-test.log are different"
+            echo "The logs/test.log file (here renamed to "pushed-test.log") that your pushed commit contains must be up to date"
+            echo "Run npm run test:all:log and add updated logs/test.log to your commit before pushing again"
+            exit 1
+          fi
