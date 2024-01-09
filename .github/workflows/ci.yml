@@ -13,8 +13,8 @@ jobs:
       - run: npm install
       - run: npm run lint:check
       - run: npm run format:check
-      - name: Rename logs so that they won't be overwritten by the next step
-        run: mv logs/test.log logs/pushed-test.log && mv logs/test.json logs/pushed-test.json
+      - name: Rename log file so that it won't be overwritten by the next step
+        run: mv logs/test.log logs/pushed-test.log
       - run: npm run test:all:log
       - name: Compare logs
         run: |
