@@ -55,27 +55,29 @@ npm run start:dev   # build and run the app in development mode (server automati
 ```
 
 The server will be listening on port `8080`. The below command should return `{"message":"Unauthorized","statusCode":401}`
+
 ```bash
 curl "http://localhost:8080/accounts"
 ```
+
 If you don't have `curl` installed, enter above address into web browser, effect should be similar.
 
 ## Questions / Contact
 
-The issues list of this repo is for bug reports and feature requests, but also questions. Therefore, if you need support or want to discuss something, simply [create a question](https://github.com/Bodypace/bodypace-personal-data-server/issues/new). Alternatively, do not hesitate to write to us - email: rdorna8@gmail.com.
+The issues list of this repo is for bug reports and feature requests, but also questions. Therefore, if you need support or want to discuss something, simply [create a question](https://github.com/Bodypace/bodypace-personal-data-server/issues/new). Alternatively, do not hesitate to write an email to: contact@bodypace.org.
 
 ## Contributing
 
 First of all, thank you for considering taking the time to help develop this project!
 
 In [CONTRIBUTING.md](docs/CONTRIBUTING.md) you will find all necessary informations, including:
+
 - how to setup project for development
 - how project is structured
 - how to make sure your code is matching our quality requirements
 - how to test your code changes
 - how to push your code changes
 - how our team communicates, what we offer our contributors, and how to join us.
-
 
 ## License
 
