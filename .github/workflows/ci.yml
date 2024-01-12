@@ -13,6 +13,21 @@ jobs:
       - run: npm install
       - run: npm run lint:check
       - run: npm run format:check
+
+      # Generating OpenAPI spec and comparing it with the pushed spec
+      - name: Rename openapi.yaml file so that it won't be overwritten by the next step
+        run: mv docs/openapi.yaml docs/pushed-openapi.yaml
+      - run: npm run docs:openapi:generate
+      - name: Compare OpenAPI specs
+        run: |
+          if ! cmp -s docs/openapi.yaml docs/pushed-openapi.yaml; then
+            echo "Files docs/openapi.yaml and docs/pushed-openapi.yaml are different"
+            echo "The docs/openapi.yaml file (here renamed to "pushed-openapi.yaml") that your pushed commit contains must be up to date"
+            echo "Run npm run docs:openapi:generate and add updated docs/openapi.yaml to your commit before pushing again"
+            exit 1
+          fi
+
+      # Running tests and comparing actual logs with the pushed version
       - name: Rename log file so that it won't be overwritten by the next step
         run: mv logs/test.log logs/pushed-test.log
       - run: npm run test:all:log
