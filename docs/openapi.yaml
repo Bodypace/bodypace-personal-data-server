@@ -1,0 +1,260 @@
+openapi: 3.0.0
+paths:
+  /documents:
+    post:
+      operationId: DocumentsController_create
+      summary: "Upload a document to server (WARNING: do not upload unencypted data!)"
+      description: "WARNING: SERVER PERFORMS NO ENCRYPTION OR DECRYPTION. The server
+        simply stores the file and associated metadata as it is, without any
+        encryption, so you must encrypt the file and metadata on client side
+        before uploading it to server. Server will not check if what it receives
+        is encrypted or not, so if you upload unencrypted data, it will be
+        stored as it is, unencrypted."
+      parameters:
+        - name: Content-Type
+          required: true
+          in: header
+          description: 'NOTE: this header should not be shown in Swagger UI, as it already
+            is handled by "Request body" section. TODO: remove it (see source
+            code for details)'
+          schema:
+            enum:
+              - multipart/form-data
+            type: string
+      requestBody:
+        required: true
+        description: File and associated metadata
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - file
+                - keys
+              properties:
+                name:
+                  type: string
+                  description: MUST BE ENCRYPTED WITH ASSOCIATED KEY (see `keys` field). File name
+                    (with extension), under which document will be stored on
+                    server
+                  example: AAAAB3NzaC1yc2EAAAADAQABA
+                file:
+                  type: string
+                  format: binary
+                  description: MUST BE ENCRYPTED WITH ASSOCIATED KEY (see `keys` field). The file
+                    to upload
+                keys:
+                  type: string
+                  description: MUST BE ENCRYPTED WITH USER PERSONAL KEY. Key that was used to
+                    encrypt `name` field and file that will be uploaded using
+                    this request. Must not be reused to encrypt anything else
+                    (yes, name is misleading because it is only one key, not
+                    many as the name "keys" suggests)
+                  example: "TODO: add example"
+      responses:
+        "201":
+          description: The document has been successfully uploaded.
+        "400":
+          description: Invalid request (e.g. missing or extra unknown field)
+        "415":
+          description: Invalid request media type (unsupported Content-Type)
+        "500":
+          description: Failed to upload document because of some error on server (request
+            was valid)
+      tags:
+        - documents
+    get:
+      operationId: DocumentsController_findAll
+      summary: List all documents
+      parameters: []
+      responses:
+        "200":
+          description: The documents have been successfully listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+        "500":
+          description: Failed to list documents because of some error on server (request
+            was valid)
+      tags:
+        - documents
+  /documents/{id}:
+    get:
+      operationId: DocumentsController_findOne
+      summary: Download a document
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: The id of the document to download
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The document has been successfully downloaded
+          content:
+            application/octet-stream:
+              schema:
+                description: The file content (exactly as it is stored on server)
+                type: string
+                format: binary
+        "400":
+          description: Id is not valid (e.g. not a number)
+        "404":
+          description: Document with given id does not exist
+        "500":
+          description: Failed to download document because of some error on server
+            (request was valid)
+      tags:
+        - documents
+    delete:
+      operationId: DocumentsController_remove
+      summary: "Delete a document (WARNING: this operation is irreversible!)"
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: The id of the document to delete
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The document has been successfully deleted or does not exist (this
+            operation is idempotent)
+        "500":
+          description: Failed to delete document because of some error on server (request
+            was valid)
+      tags:
+        - documents
+  /accounts/register:
+    post:
+      operationId: AccountsController_register
+      summary: Create a new account
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountCredentials"
+      responses:
+        "201":
+          description: Account created successfully
+        "400":
+          description: Invalid request (e.g. missing or extra unknown field)
+        "409":
+          description: Account username is already taken
+        "500":
+          description: Failed to create account because of some error on server (request
+            was valid)
+      tags:
+        - accounts
+  /accounts/login:
+    post:
+      operationId: AccountsController_login
+      summary: Login to an existing account
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountCredentials"
+      responses:
+        "201":
+          description: Account logged in successfully, JWT token returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+        "400":
+          description: Invalid request (e.g. missing or extra unknown field)
+        "401":
+          description: Invalid credentials
+        "500":
+          description: Failed to login because of some error on server (request was valid)
+      tags:
+        - accounts
+  /accounts:
+    get:
+      operationId: AccountsController_getProfile
+      summary: Get account profile
+      parameters: []
+      responses:
+        "200":
+          description: Account profile returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sub:
+                    type: number
+                  username:
+                    type: string
+                  iat:
+                    type: number
+                  exp:
+                    type: number
+        "401":
+          description: Invalid or missing JWT token
+      tags:
+        - accounts
+      security:
+        - bearer: []
+info:
+  title: Bodypace personal data server API
+  description: All endpoints are here, it's not a lot because the server is indeed simple
+  version: 0.1.0
+  contact: {}
+tags: []
+servers: []
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+  schemas:
+    Document:
+      type: object
+      properties:
+        id:
+          type: number
+          description: Unique document id that was generated by server
+          example: 1
+        name:
+          type: string
+          description: MUST BE ENCRYPTED WITH ASSOCIATED KEY (stored in `keys` field).
+            file name (with extension), under which document is stored on server
+          example: AAAAB3NzaC1yc2EAAAADAQABA
+        keys:
+          type: string
+          description: MUST BE ENCRYPTED WITH USER PERSONAL KEY. Key used to encrypt
+            document name and content
+          example: "TODO: add example"
+      required:
+        - id
+        - name
+        - keys
+    AccountCredentials:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Unique username
+          example: john_doe
+        password:
+          type: string
+          description: User password
+          example: some_strong_password
+      required:
+        - username
+        - password

@@ -22,7 +22,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "test:all": "jest --config ./all-test-jest.config.json --runInBand",
-    "test:all:log": "mkdir -p logs && jest --config ./all-test-jest.config.json --runInBand --json > logs/test.json && utils/parse-jest-json.mjs logs/test.json > logs/test.log"
+    "test:all:log": "mkdir -p logs && jest --config ./all-test-jest.config.json --runInBand --json > logs/test.json && utils/parse-jest-json.mjs logs/test.json > logs/test.log",
+    "docs:openapi:generate": "nest start -- --only-generate-openapi-spec"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -30,6 +31,7 @@
     "@nestjs/jwt": "^10.1.1",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/swagger": "^7.1.17",
     "@nestjs/typeorm": "^10.0.0",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
@@ -37,7 +39,8 @@
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
     "sqlite3": "^5.1.6",
-    "typeorm": "^0.3.17"
+    "typeorm": "^0.3.17",
+    "yaml": "^2.3.4"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
