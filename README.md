@@ -4,7 +4,9 @@
   </a>
 </p>
 
-# Bodypace personal data server
+<p align="center">
+  Own your health data. Leave 0 room for server owner to access it.
+</p>
 
 <p align="center">
   <a href="https://github.com/Bodypace/bodypace-personal-data-server/blob/master/LICENSE">
@@ -15,7 +17,7 @@
   <img alt="" src="https://img.shields.io/badge/status-not%20ready%20yet%20(under%20development)-yellow" />
 </p>
 
-## Description
+# Bodypace personal data server
 
 Server that stores encrypted personal data and can share it, e.g.: smartwatch feed (sleep data, pulse, etc.), diet, exercise notes, pdf's with health/medical data, DICOMs, supplements/drugs intake.
 
