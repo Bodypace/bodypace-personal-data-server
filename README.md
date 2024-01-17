@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/github/license/bodypace/bodypace-personal-data-server" alt="Package License" /></a>
   <img alt="GitHub commit activity (branch)" src="https://img.shields.io/github/commit-activity/t/bodypace/bodypace-personal-data-server">
   <img alt="GitHub package.json version (branch)" src="https://img.shields.io/github/package-json/v/bodypace/bodypace-personal-data-server/master">
-  <img alt="" src="https://img.shields.io/badge/tests-passing%20(I%20run%20them%20manually,%20no%20CI%20yet)-green" />
+  <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/bodypace/bodypace-personal-data-server/ci.yml?label=tests">
   <img alt="" src="https://img.shields.io/badge/status-not%20ready%20yet%20(under%20development)-yellow" />
 </p>
 
