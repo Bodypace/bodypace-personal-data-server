@@ -16,6 +16,8 @@ import {
   BadRequestException,
   NotFoundException,
   ParseIntPipe,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +27,7 @@ import {
   ApiBody,
   ApiResponse,
   ApiHeader,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -33,13 +36,16 @@ import { createReadStream } from 'fs';
 import type { Response } from 'express';
 import { DocumentMetadata } from './dto/document-metadata.dto';
 import { Document } from './entities/document.entity';
+import { AuthGuard } from '../accounts/guards/auth.guard';
 
 @ApiTags('documents')
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentService: DocumentsService) {}
 
+  @UseGuards(AuthGuard)
   @Post()
+  @ApiBearerAuth()
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({
     summary:
@@ -123,6 +129,7 @@ export class DocumentsController {
     @UploadedFile() file: Express.Multer.File,
     @Headers('Content-Type')
     contentType: string,
+    @Request() req: any,
   ) {
     // TODO: maybe this and file checks could be extracted to some decorators, interceptors, pipes etc.
     if (!contentType.startsWith('multipart/form-data; boundary=')) {
@@ -139,7 +146,12 @@ export class DocumentsController {
       throw new BadRequestException('Uploaded file cannot be empty');
     }
     try {
-      return await this.documentService.create(body.name, file, body.keys);
+      return await this.documentService.create(
+        body.name,
+        file,
+        body.keys,
+        req.user.sub,
+      );
     } catch (error) {
       // TODO: add { cause: error } for debugging
       // https://docs.nestjs.com/exception-filters
@@ -149,7 +161,9 @@ export class DocumentsController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Get()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'List all documents' })
   @ApiResponse({
     status: 200,
@@ -161,9 +175,9 @@ export class DocumentsController {
     description:
       'Failed to list documents because of some error on server (request was valid)',
   })
-  async findAll(): Promise<Document[]> {
+  async findAll(@Request() req: any): Promise<Document[]> {
     try {
-      return await this.documentService.findAll();
+      return await this.documentService.findAll(req.user.sub);
     } catch (error) {
       // TODO: add { cause: error } for debugging
       // https://docs.nestjs.com/exception-filters
@@ -173,7 +187,9 @@ export class DocumentsController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Download a document' })
   @ApiParam({
     name: 'id',
@@ -209,11 +225,12 @@ export class DocumentsController {
   })
   async findOne(
     @Param('id', ParseIntPipe) id: string,
+    @Request() req: any,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile | void> {
     let document;
     try {
-      document = await this.documentService.findOne(+id);
+      document = await this.documentService.findOne(+id, req.user.sub);
     } catch (error) {
       // TODO: add { cause: error } for debugging
       // https://docs.nestjs.com/exception-filters
@@ -227,7 +244,7 @@ export class DocumentsController {
         'Content-Disposition': `attachment; filename="${document.name}"`,
       });
       const file = createReadStream(
-        `${this.documentService.storagePath}/${document.name}`,
+        `${this.documentService.storagePath}/${document.userId}/${document.name}`,
       );
       return new StreamableFile(file);
     }
@@ -256,7 +273,7 @@ export class DocumentsController {
   })
   async remove(@Param('id') id: string) {
     try {
-      return await this.documentService.remove(+id);
+      return await this.documentService.remove(+id, 1337);
     } catch (error) {
       if (
         error.message ===

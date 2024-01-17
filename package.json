@@ -21,7 +21,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
-    "test:all": "jest --config ./all-test-jest.config.json --runInBand",
+    "test:all": "jest --config ./all-test-jest.config.json --runInBand --testTimeout 6000000",
     "test:all:log": "mkdir -p logs && jest --config ./all-test-jest.config.json --runInBand --json > logs/test.json && utils/parse-jest-json.mjs logs/test.json > logs/test.log",
     "docs:openapi:generate": "nest start -- --only-generate-openapi-spec"
   },

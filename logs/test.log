@@ -156,21 +156,21 @@ PASSED src/modules/accounts/modules/database/database.service.spec.ts
             ✓ should not alter database and throw descriptive error
           for username being empty string
             ✓ should not alter database and throw descriptive error
-PASSED src/modules/documents/documents.controller.spec.ts
+FAILED src/modules/documents/documents.controller.spec.ts
   DocumentsController
-    ✓ should be defined
-    ✓ documentsService should be defined
+    x should be defined
+    x documentsService should be defined
     create()
-      ✓ should call documentsService#create() with received data and forward result
+      x should call documentsService#create() with received data and forward result
     findAll()
-      ✓ should call documentsService#findAll() and forward result
+      x should call documentsService#findAll() and forward result
     findOne()
       for correct document id
-        ✓ should call documentsService#findOne() with received data, set header accordingly to returned document and return StreamableFile 
+        x should call documentsService#findOne() with received data, set header accordingly to returned document and return StreamableFile 
       for unknown document id
-        ✓ should call documentsService#findOne() with received data and for null response throw NotFoundException (404)
+        x should call documentsService#findOne() with received data and for null response throw NotFoundException (404)
     remove()
-      ✓ should call documentsService#remove() with received data and forward result
+      x should call documentsService#remove() with received data and forward result
 PASSED src/modules/documents/documents.service.spec.ts
   DocumentsService
     ✓ service should be defined
@@ -181,103 +181,209 @@ PASSED src/modules/documents/documents.service.spec.ts
         with database available
           for correct arguments
             ✓ should store new document in database and return nothing
-          for incorrect name - ""
+          for incorrect name - 
             ✓ should not alter database and throw error with correct message
-          for incorrect keys - ""
+          for incorrect keys - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - 0
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - -1
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - some string
             ✓ should not alter database and throw error with correct message
         with database not available
-          for incorrect name - ""
+          for correct arguments
             ✓ should not alter database and throw error with correct message
-          for incorrect keys - ""
+          for incorrect name - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect keys - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - 0
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - -1
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - some string
             ✓ should not alter database and throw error with correct message
       with database that already stores document
         with database available
           for correct arguments
             ✓ should store new document in database and return nothing
-          for correct arguments - same file under different name
+          for correct arguments - same file under different name (name differs only in case) - same user
             ✓ should store document again in database, not reuse it, and return nothing
-          for incorrect name - already taken
+          for correct arguments - same file under different name (name differs only in case) - different user
+            ✓ should store document again in database, not reuse it, and return nothing
+          for correct arguments - already taken name - different user
+            ✓ should store new document in database and return nothing
+          for incorrect arguments - already taken name - same user
             ✓ should not alter database and throw error with correct message
-          for incorrect name - ""
+          for incorrect name - 
             ✓ should not alter database and throw error with correct message
-          for incorrect keys - ""
+          for incorrect keys - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - 0
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - -1
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - some string
             ✓ should not alter database and throw error with correct message
         with database not available
-          for incorrect name - already taken
+          for correct arguments
             ✓ should not alter database and throw error with correct message
-          for incorrect name - ""
+          for correct arguments - same file under different name (name differs only in case) - same user
             ✓ should not alter database and throw error with correct message
-          for incorrect keys - ""
+          for correct arguments - same file under different name (name differs only in case) - different user
+            ✓ should not alter database and throw error with correct message
+          for correct arguments - already taken name - different user
+            ✓ should not alter database and throw error with correct message
+          for incorrect arguments - already taken name - same user
+            ✓ should not alter database and throw error with correct message
+          for incorrect name - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect keys - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - 
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - 0
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - -1
+            ✓ should not alter database and throw error with correct message
+          for incorrect userId - some string
             ✓ should not alter database and throw error with correct message
     findAll()
       with database that is empty
         with database available
-          ✓ should not alter database and return a list of stored documents
+          for unknown userId - 2
+            ✓ should not alter database and return empty list
         with database not available
-          ✓ should not alter database and throw error which explains that db is not accessible
-      with database that already stores two documents
+          for unknown userId - 2
+            ✓ should not alter database and throw error with correct message
+      with database that already stores three documents
         with database available
-          ✓ should not alter database and return a list of stored documents
+          for unknown userId - 2
+            ✓ should not alter database and return empty list
+          for known userId - 1 (first user)
+            ✓ should not alter database and return a list of stored documents belonging to this user
+          for known userId - 3 (second user)
+            ✓ should not alter database and return a list of stored documents belonging to this user
         with database not available
-          ✓ should not alter database and throw error which explains that db is not accessible
+          for unknown userId - 2
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1 (first user)
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3 (second user)
+            ✓ should not alter database and throw error with correct message
     findOne()
       with database that is empty
         with database available
-          for unknown document id
+          for unknown userId - 2, and unknown document id - 3
             ✓ should not alter database and return null
         with database not available
-          for document id - 1
-            ✓ should not alter database and return error which explains that db is not accessible
-          for document id - 2
-            ✓ should not alter database and return error which explains that db is not accessible
-          for document id - 3
-            ✓ should not alter database and return error which explains that db is not accessible
+          for unknown userId - 2, and unknown document id - 3
+            ✓ should not alter database and throw error with correct message
       with database that already stores two documents
         with database available
-          with first document id
-            ✓ should not alter database and return selected document
-          with second document id
-            ✓ should not alter database and return selected document
-          for unknown document id - decimal 1.001
+          for unknown userId - 2, and unknown document id - 3
             ✓ should not alter database and return null
-          for unknown document id
+          for known userId - 1, and known document id - 1 (his document)
+            ✓ should not alter database and return selected document
+          for known userId - 3, and known document id - 2 (his document)
+            ✓ should not alter database and return selected document
+          for known userId - 1, and known document id - 2 (not his document)
+            ✓ should not alter database and return null
+          for known userId - 3, and known document id - 1 (not his document)
+            ✓ should not alter database and return null
+          for known userId - 1, and unknown document id - 3
+            ✓ should not alter database and return null
+          for known userId - 1, and unknown document id - 1.001
+            ✓ should not alter database and return null
+          for known userId - 3, and unknown document id - 3
+            ✓ should not alter database and return null
+          for unknown userId - 2, and known document id - 1
+            ✓ should not alter database and return null
+          for unknown userId - 2, and known document id - 2
             ✓ should not alter database and return null
         with database not available
-          for document id - 1
-            ✓ should not alter database and return error which explains that db is not accessible
-          for document id - 2
-            ✓ should not alter database and return error which explains that db is not accessible
-          for document id - 3
-            ✓ should not alter database and return error which explains that db is not accessible
+          for unknown userId - 2, and unknown document id - 3
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and known document id - 1 (his document)
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and known document id - 2 (his document)
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and known document id - 2 (not his document)
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and known document id - 1 (not his document)
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and unknown document id - 3
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and unknown document id - 1.001
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and unknown document id - 3
+            ✓ should not alter database and throw error with correct message
+          for unknown userId - 2, and known document id - 1
+            ✓ should not alter database and throw error with correct message
+          for unknown userId - 2, and known document id - 2
+            ✓ should not alter database and throw error with correct message
     remove()
       with database that is empty
         with database available
-          for unknown document id
-            ✓ should not alter database and throw error which explains that document id is unknown
+          for unknown userId - 2, and unknown document id - 4
+            ✓ should not alter database and throw error with correct message
         with database not available
-          for document id - 1
-            ✓ should not alter database and throw error which explains that db is not accessible
-          for document id - 2
-            ✓ should not alter database and throw error which explains that db is not accessible
-          for document id - 3
-            ✓ should not alter database and throw error which explains that db is not accessible
-      with database that already stores two documents
+          for unknown userId - 2, and unknown document id - 4
+            ✓ should not alter database and throw error with correct message
+      with database that already stores three documents
         with database available
-          with first document id
+          for known userId - 1, and his document id - 1
             ✓ should remove selected document from database and return nothing
-          with second document id
+          for known userId - 1, and his document id - 3
             ✓ should remove selected document from database and return nothing
-          for unknown document id - decimal 1.001
-            ✓ should not alter database and throw error which explains that document id is unknown
-          for unknown document id
-            ✓ should not alter database and throw error which explains that document id is unknown
+          for known userId - 1, and not his document id - 2
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and unknown document id - 1.001
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and unknown document id - 4
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and his document id - 2
+            ✓ should remove selected document from database and return nothing
+          for known userId - 3, and not his document id - 1
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and not his document id - 3
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and unknown document id - 4
+            ✓ should not alter database and throw error with correct message
+          for unknown userId - 2, and not his document id - 1
+            ✓ should not alter database and throw error with correct message
+          for unknown userId - 2, and unknown document id - 4
+            ✓ should not alter database and throw error with correct message
         with database not available
-          for document id - 1
-            ✓ should not alter database and throw error which explains that db is not accessible
-          for document id - 2
-            ✓ should not alter database and throw error which explains that db is not accessible
-          for document id - 3
-            ✓ should not alter database and throw error which explains that db is not accessible
+          for known userId - 1, and his document id - 1
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and his document id - 3
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and not his document id - 2
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and unknown document id - 1.001
+            ✓ should not alter database and throw error with correct message
+          for known userId - 1, and unknown document id - 4
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and his document id - 2
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and not his document id - 1
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and not his document id - 3
+            ✓ should not alter database and throw error with correct message
+          for known userId - 3, and unknown document id - 4
+            ✓ should not alter database and throw error with correct message
+          for unknown userId - 2, and not his document id - 1
+            ✓ should not alter database and throw error with correct message
+          for unknown userId - 2, and unknown document id - 4
+            ✓ should not alter database and throw error with correct message
 PASSED test/accounts.e2e-spec.ts
   AccountsController (e2e)
     ✓ dataSource should be defined
@@ -579,7 +685,7 @@ PASSED test/accounts.e2e-spec.ts
               ✓ should 401, not alter database and return message that explains error cause
             for request with no token
               ✓ should 401, not alter database and return message that explains error cause
-PASSED test/documents.e2e-spec.ts
+FAILED test/documents.e2e-spec.ts
   DocumentsController (e2e)
     ✓ dataSource should be defined
     /documents
@@ -587,175 +693,175 @@ PASSED test/documents.e2e-spec.ts
         with database that is empty
           with database available
             for request that is correct
-              ✓ should 201, store document in database and return nothing
+              x should 201, store document in database and return nothing
             for request that is not a multipart/form-data
               for request that has Content-Type application/json and `file` field
-                ✓ should 400, not alter database and return message that explains error cause
+                x should 400, not alter database and return message that explains error cause
               for request that has Content-Type application/json and no `file` field
-                ✓ should 415, not alter database and return message that explains error cause
+                x should 415, not alter database and return message that explains error cause
             for request with `Name` field instead of `name`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `NAME` field instead of `name`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `name` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with empty `name` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `File` field instead of `file`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `FILE` field instead of `file`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `file` field (no file attached/uploading)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `file` field that is not a file
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `file` that uploads empty file
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `Keys` field instead of `keys`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `KEYS` field instead of `keys`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `keys` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with empty `keys` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `Field`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `key`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `type`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field ` `
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
           with database not available
             for request that is correct
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request that is not a multipart/form-data
               for request that has Content-Type application/json and `file` field
-                ✓ should 400, not alter database and return message that explains error cause
+                x should 400, not alter database and return message that explains error cause
               for request that has Content-Type application/json and no `file` field
-                ✓ should 415, not alter database and return message that explains error cause
+                x should 415, not alter database and return message that explains error cause
             for request with `Name` field instead of `name`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `NAME` field instead of `name`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `name` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with empty `name` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `File` field instead of `file`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `FILE` field instead of `file`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `file` field (no file attached/uploading)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `file` field that is not a file
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `file` that uploads empty file
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `Keys` field instead of `keys`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `KEYS` field instead of `keys`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `keys` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with empty `keys` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `Field`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `key`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `type`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field ` `
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
         with database that already stores a document
           with database available
             for request that is correct - different `name`, different `file` content and `keys`
-              ✓ should 201, store document in database and return nothing
+              x should 201, store document in database and return nothing
             for request that is correct - different `name`, same `file` content and `keys`
-              ✓ should 201, store document in database and return nothing
+              x should 201, store document in database and return nothing
             for request that is not a multipart/form-data
               for request that has Content-Type application/json and `file` field
-                ✓ should 400, not alter database and return message that explains error cause
+                x should 400, not alter database and return message that explains error cause
               for request that has Content-Type application/json and no `file` field
-                ✓ should 415, not alter database and return message that explains error cause
+                x should 415, not alter database and return message that explains error cause
             for request with `Name` field instead of `name`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `NAME` field instead of `name`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `name` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with empty `name` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `File` field instead of `file`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `FILE` field instead of `file`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `file` field (no file attached/uploading)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `file` field that is not a file
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `file` that uploads empty file
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `Keys` field instead of `keys`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `KEYS` field instead of `keys`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `keys` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with empty `keys` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `Field`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `key`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `type`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field ` `
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
           with database not available
             for request that is correct
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request that is not a multipart/form-data
               for request that has Content-Type application/json and `file` field
-                ✓ should 400, not alter database and return message that explains error cause
+                x should 400, not alter database and return message that explains error cause
               for request that has Content-Type application/json and no `file` field
-                ✓ should 415, not alter database and return message that explains error cause
+                x should 415, not alter database and return message that explains error cause
             for request with `Name` field instead of `name`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `NAME` field instead of `name`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `name` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with empty `name` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `File` field instead of `file`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `FILE` field instead of `file`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `file` field (no file attached/uploading)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `file` field that is not a file
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `file` that uploads empty file
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `Keys` field instead of `keys`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with `KEYS` field instead of `keys`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with missing `keys` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with empty `keys` field
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `Field`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `key`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field `type`
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with additional unknown field ` `
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
       /:id (POST)
         with database that is empty
           with database available
@@ -765,17 +871,17 @@ PASSED test/documents.e2e-spec.ts
         with database that is empty
           with database available
             for request that is correct
-              ✓ should 200, not alter database and return list of documents
+              x should 200, not alter database and return list of documents
           with database not available
             for request that is correct
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
         with database that already stores two documents
           with database available
             for request that is correct
-              ✓ should 200, not alter database and return list of documents
+              x should 200, not alter database and return list of documents
           with database not available
             for request that is correct
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
       /:id (GET)
         with database that is empty
           with database available
@@ -811,46 +917,46 @@ PASSED test/documents.e2e-spec.ts
         with database that already stores two documents
           with database available
             for request that is correct (first document id - 1)
-              ✓ should 200, not alter database and download correct document
+              x should 200, not alter database and download correct document
             for request that is correct technically (first document id - 001)
-              ✓ should 200, not alter database and download correct document
+              x should 200, not alter database and download correct document
             for request that is correct (second document id - 2)
-              ✓ should 200, not alter database and download correct document
+              x should 200, not alter database and download correct document
             for request with unknown id
-              ✓ should 404, not alter database and return "404 Not Found" response
+              x should 404, not alter database and return "404 Not Found" response
             for request with negative number id
-              ✓ should 404, not alter database and return "404 Not Found" response
+              x should 404, not alter database and return "404 Not Found" response
             for request with 0 as id (we count from 1)
-              ✓ should 404, not alter database and return "404 Not Found" response
+              x should 404, not alter database and return "404 Not Found" response
             for request with string as id
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with floating point number as id (1.0)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with floating point number as id (1.1)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with floating point number as id (3.0)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
           with database not available
             for request that is correct (first document id - 1)
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request that is correct technically (first document id - 001)
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request that is correct (second document id - 2)
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request with unknown id
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request with negative number id
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request with 0 as id (we count from 1)
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request with string as id
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with floating point number as id (1.0)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with floating point number as id (1.1)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
             for request with floating point number as id (3.0)
-              ✓ should 400, not alter database and return message that explains error cause
+              x should 400, not alter database and return message that explains error cause
       / (DELETE)
         with database that is empty
           with database available
@@ -862,15 +968,15 @@ PASSED test/documents.e2e-spec.ts
         with database that already stores two documents
           with database available
             for request that is correct
-              ✓ should 404, not alter database and return message that explains error cause
+              x should 404, not alter database and return message that explains error cause
           with database not available
             for request that is correct
-              ✓ should 404, not alter database and return message that explains error cause
+              x should 404, not alter database and return message that explains error cause
       /:id (DELETE)
         with database that is empty
           with database available
             for request with unknown document id
-              ✓ should 200, not alter database and return nothing 
+              x should 200, not alter database and return nothing 
           with database not available
             for request with document id (1)
               ✓ should 500, not alter database and return message that explains error cause
@@ -881,21 +987,21 @@ PASSED test/documents.e2e-spec.ts
         with database that already stores two documents
           with database available
             for request with known document id (1)
-              ✓ should 200, remove only mentioned document from database and return nothing
+              x should 200, remove only mentioned document from database and return nothing
             for request with known document id (2)
-              ✓ should 200, remove only mentioned document from database and return nothing
+              x should 200, remove only mentioned document from database and return nothing
             for request with unknown document id
-              ✓ should 200, not alter database and return nothing 
+              x should 200, not alter database and return nothing 
           with database not available
             for request with document id (1)
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request with document id (2)
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
             for request with document id (3)
-              ✓ should 500, not alter database and return message that explains error cause
+              x should 500, not alter database and return message that explains error cause
 
-Test Suites: 8 passed, 8 total, 0 failed, 0 pending, 0 runtime error
-Tests: 392 passed, 392 total, 0 failed, 0 pending, 0 todo
+Test Suites: 6 passed, 8 total, 2 failed, 0 pending, 0 runtime error
+Tests: 322 passed, 443 total, 121 failed, 0 pending, 0 todo
 Snapshots: [
   [ false, 'failure' ],
   [ false, 'didUpdate' ],
@@ -910,5 +1016,5 @@ Snapshots: [
   [ 0, 'filesUnmatched' ],
   [ 0, 'filesUpdated' ]
 ]
-Success: true (was interrupted: false )
+Success: false (was interrupted: false )
 note: this entire log was generated by script from `jest --json` output
