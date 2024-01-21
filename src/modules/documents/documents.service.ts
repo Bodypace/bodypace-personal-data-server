@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Document } from './entities/document.entity';
-import { writeFile, unlink } from 'fs/promises';
+import { mkdir, writeFile, readdir, rmdir, unlink } from 'fs/promises';
 
 @Injectable()
 export class DocumentsService {
@@ -14,9 +14,10 @@ export class DocumentsService {
   ) {}
 
   async create(
-    name: string,
+    name: Document['name'],
     file: Express.Multer.File,
-    keys: string,
+    keys: Document['keys'],
+    userId: Document['userId'],
   ): Promise<void> {
     if (!name) {
       throw new Error('`name` must be a non-empty string');
@@ -26,8 +27,13 @@ export class DocumentsService {
       throw new Error('`keys` must be a non-empty string');
     }
 
+    if (!userId || userId <= 0 || typeof userId !== 'number') {
+      throw new Error('`userId` must be a positive number');
+    }
+
     const documents = await this.documentsRepository.findBy({
       name: name,
+      userId: userId,
     });
 
     if (documents.length !== 0) {
@@ -36,33 +42,42 @@ export class DocumentsService {
       );
     }
 
-    await writeFile(`${this.storagePath}/${name}`, file.buffer);
+    await mkdir(`${this.storagePath}/${userId}`, { recursive: true });
+    await writeFile(`${this.storagePath}/${userId}/${name}`, file.buffer);
     const document = new Document();
     document.name = name;
     document.keys = keys;
+    document.userId = userId;
     await this.documentsRepository.save(document);
   }
 
-  async findAll(): Promise<Document[]> {
-    return await this.documentsRepository.find();
+  async findAll(userId: Document['userId']): Promise<Document[]> {
+    return await this.documentsRepository.findBy({ userId });
   }
 
-  async findOne(id: number): Promise<Document | null> {
-    const documents = await this.documentsRepository.findBy({ id });
+  async findOne(
+    id: Document['id'],
+    userId: Document['userId'],
+  ): Promise<Document | null> {
+    const documents = await this.documentsRepository.findBy({ id, userId });
     if (documents.length === 0) {
       return null;
     }
     return documents[documents.length - 1];
   }
 
-  async remove(id: number): Promise<void> {
-    const document = await this.findOne(id);
+  async remove(id: Document['id'], userId: Document['userId']): Promise<void> {
+    const document = await this.findOne(id, userId);
     if (document === null) {
       throw new Error(
-        `Cannot remove document from database, unknown id #${id}`,
+        `Cannot remove document from database, unknown document id #${id} or userId #${userId}`,
       );
     }
-    await unlink(`${this.storagePath}/${document.name}`);
+    const userDocumentsDir = `${this.storagePath}/${userId}`;
+    await unlink(`${userDocumentsDir}/${document.name}`);
+    if ((await readdir(userDocumentsDir)).length === 0) {
+      await rmdir(userDocumentsDir);
+    }
     await this.documentsRepository.remove(document);
   }
 }
