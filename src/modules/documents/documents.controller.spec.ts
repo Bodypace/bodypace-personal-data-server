@@ -44,6 +44,7 @@ interface Mocks {
     findAll: string;
     findOne: {
       name: string;
+      userId: number;
     };
   };
   correctDocumentId: number;
@@ -56,6 +57,7 @@ const mocks: Mocks = {
     findAll: 'findAll() call response',
     findOne: {
       name: 'findOne-call-returned-document-with-name.pdf',
+      userId: 424242,
     },
   },
   correctDocumentId: 54,
@@ -100,12 +102,6 @@ function mockedDocumentsService() {
 }
 
 interface Fixtures {
-  documentId?: number;
-  documentName?: string;
-  uploadedFile?: Express.Multer.File;
-  keys?: string;
-  body?: any;
-
   document?: TestDocument;
 }
 
@@ -148,12 +144,6 @@ describe('DocumentsController', () => {
     await unlink(constants.databasePath);
     await rm(constants.databaseDocumentsDir, { recursive: true });
     await mkdir(constants.databaseDocumentsDir);
-
-    fixtures.documentId = undefined;
-    fixtures.documentName = undefined;
-    fixtures.uploadedFile = undefined;
-    fixtures.keys = undefined;
-    fixtures.body = undefined;
 
     fixtures.document = {};
   });
@@ -219,9 +209,13 @@ describe('DocumentsController', () => {
   describe('findOne()', () => {
     describe('for correct document id', () => {
       beforeEach(async () => {
+        await mkdir(
+          `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.userId}`,
+          { recursive: true },
+        );
         await copyFile(
           constants.testDocumentPath,
-          `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.name}`,
+          `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.userId}/${mocks.documentsService.findOne.name}`,
         );
       });
 
@@ -237,7 +231,7 @@ describe('DocumentsController', () => {
 
         const expectedResult = new StreamableFile(
           createReadStream(
-            `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.name}`,
+            `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.userId}/${mocks.documentsService.findOne.name}`,
           ),
         );
         const receivedResult = await controller.findOne(
@@ -266,13 +260,21 @@ describe('DocumentsController', () => {
 
     describe('for unknown document id', () => {
       it('should call documentsService#findOne() with received data and for null response throw NotFoundException (404)', async () => {
-        fixtures.documentId = mocks.incorrectDocumentid;
+        fixtures.document = {
+          id: mocks.incorrectDocumentid,
+          userId: 4224,
+        };
+
         const res = {
           set: jest.fn(),
         } as any as Response;
 
         await expect(
-          controller.findOne(String(fixtures.documentId), 1337, res),
+          controller.findOne(
+            String(fixtures.document.id),
+            { user: { sub: fixtures.document.userId } },
+            res,
+          ),
         ).rejects.toThrow(NotFoundException);
 
         expect(res.set).toHaveBeenCalledTimes(0);
@@ -280,7 +282,8 @@ describe('DocumentsController', () => {
         expect(documentsService.findOne).toHaveBeenCalledTimes(1);
         expect(documentsService.findOne).toHaveBeenNthCalledWith(
           1,
-          fixtures.documentId,
+          fixtures.document.id,
+          fixtures.document.userId,
         );
       });
     });
@@ -288,16 +291,22 @@ describe('DocumentsController', () => {
 
   describe('remove()', () => {
     it('should call documentsService#remove() with received data and forward result', async () => {
-      fixtures.documentId = mocks.correctDocumentId;
+      fixtures.document = {
+        id: mocks.correctDocumentId,
+        userId: 4224,
+      };
 
       await expect(
-        controller.remove(String(fixtures.documentId)),
+        controller.remove(String(fixtures.document.id), {
+          user: { sub: fixtures.document.userId },
+        }),
       ).resolves.toBeUndefined();
 
       expect(documentsService.remove).toHaveBeenCalledTimes(1);
       expect(documentsService.remove).toHaveBeenNthCalledWith(
         1,
-        fixtures.documentId,
+        fixtures.document.id,
+        fixtures.document.userId,
       );
     });
 

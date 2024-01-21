@@ -108,6 +108,10 @@ export class DocumentsController {
     description: 'Invalid request (e.g. missing or extra unknown field)',
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized (missing or invalid JWT bearer token)',
+  })
+  @ApiResponse({
     status: 415,
     description: 'Invalid request media type (unsupported Content-Type)',
   })
@@ -171,6 +175,10 @@ export class DocumentsController {
     type: [Document],
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized (missing or invalid JWT bearer token)',
+  })
+  @ApiResponse({
     status: 500,
     description:
       'Failed to list documents because of some error on server (request was valid)',
@@ -209,6 +217,10 @@ export class DocumentsController {
         },
       },
     },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized (missing or invalid JWT bearer token)',
   })
   @ApiResponse({
     status: 404,
@@ -251,7 +263,9 @@ export class DocumentsController {
     throw new NotFoundException();
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Delete a document (WARNING: this operation is irreversible!)',
   })
@@ -267,17 +281,21 @@ export class DocumentsController {
       'The document has been successfully deleted or does not exist (this operation is idempotent)',
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized (missing or invalid JWT bearer token)',
+  })
+  @ApiResponse({
     status: 500,
     description:
       'Failed to delete document because of some error on server (request was valid)',
   })
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string, @Request() req: any) {
     try {
-      return await this.documentService.remove(+id, 1337);
+      return await this.documentService.remove(+id, req.user.sub);
     } catch (error) {
       if (
         error.message ===
-        `Cannot remove document from database, unknown id #${id}`
+        `Cannot remove document from database, unknown document id #${id} or userId #${req.user.sub}`
       ) {
         return;
       }

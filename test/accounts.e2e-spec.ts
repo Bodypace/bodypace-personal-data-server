@@ -11,6 +11,7 @@ import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
 import type { TestAccount } from './utils';
 import * as request from 'supertest';
+import { loginAccount, registerAccount } from './utilities/accounts';
 
 interface Fixtures {
   firstAccount: TestAccount;
@@ -925,53 +926,11 @@ describe('AccountsController (e2e)', () => {
           fixtures.thirdAccount.password = 'unknown password';
 
           if (databaseShouldContainAccouts) {
-            await request(app!.getHttpServer())
-              .post('/accounts/register')
-              .send({
-                username: fixtures.firstAccount.username,
-                password: fixtures.firstAccount.password,
-              })
-              .expect(201)
-              .expect({});
+            await registerAccount(app!, fixtures.firstAccount);
+            await registerAccount(app!, fixtures.secondAccount);
 
-            await request(app!.getHttpServer())
-              .post('/accounts/register')
-              .send({
-                username: fixtures.secondAccount.username,
-                password: fixtures.secondAccount.password,
-              })
-              .expect(201)
-              .expect({});
-
-            const responseNo1 = await request(app!.getHttpServer())
-              .post('/accounts/login')
-              .send({
-                username: fixtures.firstAccount.username,
-                password: fixtures.firstAccount.password,
-              })
-              .expect(201);
-
-            fixtures.firstAccount.accessToken = responseNo1.body.access_token;
-
-            expect(fixtures.firstAccount.accessToken).toBeDefined();
-            expect(fixtures.firstAccount.accessToken!.length).toBeGreaterThan(
-              150,
-            );
-
-            const responseNo2 = await request(app!.getHttpServer())
-              .post('/accounts/login')
-              .send({
-                username: fixtures.secondAccount.username,
-                password: fixtures.secondAccount.password,
-              })
-              .expect(201);
-
-            fixtures.secondAccount.accessToken = responseNo2.body.access_token;
-
-            expect(fixtures.secondAccount.accessToken).toBeDefined();
-            expect(fixtures.secondAccount.accessToken!.length).toBeGreaterThan(
-              150,
-            );
+            await loginAccount(app!, fixtures.firstAccount);
+            await loginAccount(app!, fixtures.secondAccount);
           }
         });
 
