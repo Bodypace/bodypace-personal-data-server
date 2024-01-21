@@ -50,11 +50,13 @@ function newDocument(
   id: Document['id'],
   name: Document['name'],
   keys: Document['keys'],
+  userId: Document['userId'],
 ): Document {
   const document = new Document();
   document.id = id;
   document.name = name;
   document.keys = keys;
+  document.userId = userId;
   return document;
 }
 
@@ -101,6 +103,7 @@ export interface TestDocument {
   path?: string;
   keys?: string;
   file?: Express.Multer.File;
+  userId?: number;
 }
 
 export interface TestAccount {
@@ -194,7 +197,12 @@ async function expectDatabaseDocumentsRepositoryState(
   const documentsRepository = availableDataSource.getRepository(Document);
   await expect(documentsRepository.find()).resolves.toStrictEqual(
     databaseShouldContain.map((testDocument) =>
-      newDocument(testDocument.id!, testDocument.name!, testDocument.keys!),
+      newDocument(
+        testDocument.id!,
+        testDocument.name!,
+        testDocument.keys!,
+        testDocument.userId!,
+      ),
     ),
   );
 }
@@ -203,15 +211,27 @@ async function expectDatabaseDocumentsDirState(
   databaseDocumentsDir: string,
   databaseShouldContain: TestDocument[],
 ) {
-  await expect(readdir(databaseDocumentsDir)).resolves.toStrictEqual(
-    databaseShouldContain.map((testDocument) => testDocument.name),
+  const expectedDocumentsDirContent = new Set([
+    ...databaseShouldContain.map((doc) => String(doc.userId)),
+    ...databaseShouldContain.map((doc) => `${doc.userId}/${doc.name}`),
+  ]);
+
+  const actualDocumentsDirContent = await readdir(databaseDocumentsDir, {
+    recursive: true,
+  });
+
+  expect(actualDocumentsDirContent).toHaveLength(
+    expectedDocumentsDirContent.size,
+  );
+  expect(actualDocumentsDirContent).toEqual(
+    expect.arrayContaining([...expectedDocumentsDirContent]),
   );
 
   for (const testDocument of databaseShouldContain) {
     await expect(
       filesEqual(
         testDocument.path!,
-        `${databaseDocumentsDir}/${testDocument.name}`,
+        `${databaseDocumentsDir}/${testDocument.userId}/${testDocument.name}`,
       ),
     ).resolves.toBeTruthy();
   }

@@ -25,4 +25,11 @@ export class Document {
   })
   @Column()
   keys: string;
+
+  @ApiProperty({
+    description: 'Id of user that owns this document',
+    example: 1,
+  })
+  @Column()
+  userId: number;
 }

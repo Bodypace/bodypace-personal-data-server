@@ -7,6 +7,8 @@ import { readFile, copyFile, unlink, rm, mkdir } from 'node:fs/promises';
 import type { Response } from 'express';
 import { createReadStream } from 'node:fs';
 import { NotFoundException, StreamableFile } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { TestDocument } from 'test/utils';
 
 interface Constants {
   databasePath: string;
@@ -16,6 +18,8 @@ interface Constants {
   testDocumentsDir: string;
   testDocumentName: string;
   testDocumentPath: string;
+
+  jwtSecret: string;
 }
 
 // NOTE: now tests need to be run with --runInBand for them to work.
@@ -29,6 +33,9 @@ const constants: Constants = {
   testDocumentsDir: 'test/data/documents',
   testDocumentName: 'sample-document.pdf',
   testDocumentPath: 'test/data/documents' + '/' + 'sample-document.pdf',
+
+  jwtSecret:
+    'DO NOT USE THIS VALUE. INSTEAD, CREATE A COMPLEX SECRET AND KEEP IT SAFE OUTSIDE OF THE SOURCE CODE.',
 };
 
 interface Mocks {
@@ -37,6 +44,7 @@ interface Mocks {
     findAll: string;
     findOne: {
       name: string;
+      userId: number;
     };
   };
   correctDocumentId: number;
@@ -49,6 +57,7 @@ const mocks: Mocks = {
     findAll: 'findAll() call response',
     findOne: {
       name: 'findOne-call-returned-document-with-name.pdf',
+      userId: 424242,
     },
   },
   correctDocumentId: 54,
@@ -93,11 +102,7 @@ function mockedDocumentsService() {
 }
 
 interface Fixtures {
-  documentId?: number;
-  documentName?: string;
-  uploadedFile?: Express.Multer.File;
-  keys?: string;
-  body?: any;
+  document?: TestDocument;
 }
 
 describe('DocumentsController', () => {
@@ -116,6 +121,13 @@ describe('DocumentsController', () => {
           synchronize: true,
         }),
         TypeOrmModule.forFeature([Document]),
+        JwtModule.register({
+          global: true,
+          secret: constants.jwtSecret,
+          signOptions: {
+            expiresIn: '60s',
+          },
+        }),
       ],
       controllers: [DocumentsController],
       providers: [DocumentsService],
@@ -132,6 +144,8 @@ describe('DocumentsController', () => {
     await unlink(constants.databasePath);
     await rm(constants.databaseDocumentsDir, { recursive: true });
     await mkdir(constants.databaseDocumentsDir);
+
+    fixtures.document = {};
   });
 
   it('should be defined', () => {
@@ -144,65 +158,85 @@ describe('DocumentsController', () => {
 
   describe('create()', () => {
     it('should call documentsService#create() with received data and forward result', async () => {
-      fixtures.documentName = 'some-random-document-name.pdf';
-      fixtures.keys = 'encrypted-key-that-was-used-to-encrypt-document';
-      fixtures.body = {
-        name: fixtures.documentName,
-        keys: fixtures.keys,
+      fixtures.document = {
+        name: 'some-random-document-name.pdf',
+        keys: 'encrypted-key-that-was-used-to-encrypt-document',
+        file: await mockedUploadedFile(),
+        userId: 4224,
       };
-      fixtures.uploadedFile = await mockedUploadedFile();
 
       await expect(
         controller.create(
-          fixtures.body,
-          fixtures.uploadedFile,
+          {
+            name: fixtures.document.name!,
+            keys: fixtures.document.keys!,
+          },
+          fixtures.document.file!,
           'multipart/form-data; boundary=',
+          { user: { sub: fixtures.document.userId } },
         ),
       ).resolves.toStrictEqual(mocks.documentsService.create);
 
       expect(documentsService.create).toHaveBeenCalledTimes(1);
       expect(documentsService.create).toHaveBeenNthCalledWith(
         1,
-        fixtures.documentName,
-        fixtures.uploadedFile,
-        fixtures.keys,
+        fixtures.document.name,
+        fixtures.document.file,
+        fixtures.document.keys,
+        fixtures.document.userId,
       );
     });
   });
 
   describe('findAll()', () => {
-    it('should call documentsService#findAll() and forward result', async () => {
-      await expect(controller.findAll()).resolves.toStrictEqual(
-        mocks.documentsService.findAll,
-      );
+    it('should call documentsService#findAll() with received data and forward result', async () => {
+      fixtures.document = {
+        userId: 4224,
+      };
+
+      await expect(
+        controller.findAll({ user: { sub: fixtures.document.userId } }),
+      ).resolves.toStrictEqual(mocks.documentsService.findAll);
 
       expect(documentsService.findAll).toHaveBeenCalledTimes(1);
-      expect(documentsService.findAll).toHaveBeenNthCalledWith(1);
+      expect(documentsService.findAll).toHaveBeenNthCalledWith(
+        1,
+        fixtures.document.userId,
+      );
     });
   });
 
   describe('findOne()', () => {
     describe('for correct document id', () => {
       beforeEach(async () => {
+        await mkdir(
+          `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.userId}`,
+          { recursive: true },
+        );
         await copyFile(
           constants.testDocumentPath,
-          `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.name}`,
+          `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.userId}/${mocks.documentsService.findOne.name}`,
         );
       });
 
       it('should call documentsService#findOne() with received data, set header accordingly to returned document and return StreamableFile ', async () => {
-        fixtures.documentId = mocks.correctDocumentId;
+        fixtures.document = {
+          id: mocks.correctDocumentId,
+          userId: 4224,
+        };
+
         const res = {
           set: jest.fn(),
         } as any as Response;
 
         const expectedResult = new StreamableFile(
           createReadStream(
-            `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.name}`,
+            `${constants.databaseDocumentsDir}/${mocks.documentsService.findOne.userId}/${mocks.documentsService.findOne.name}`,
           ),
         );
         const receivedResult = await controller.findOne(
-          String(fixtures.documentId),
+          String(fixtures.document.id),
+          { user: { sub: fixtures.document.userId } },
           res,
         );
 
@@ -218,20 +252,29 @@ describe('DocumentsController', () => {
         expect(documentsService.findOne).toHaveBeenCalledTimes(1);
         expect(documentsService.findOne).toHaveBeenNthCalledWith(
           1,
-          fixtures.documentId,
+          fixtures.document.id,
+          fixtures.document.userId,
         );
       });
     });
 
     describe('for unknown document id', () => {
       it('should call documentsService#findOne() with received data and for null response throw NotFoundException (404)', async () => {
-        fixtures.documentId = mocks.incorrectDocumentid;
+        fixtures.document = {
+          id: mocks.incorrectDocumentid,
+          userId: 4224,
+        };
+
         const res = {
           set: jest.fn(),
         } as any as Response;
 
         await expect(
-          controller.findOne(String(fixtures.documentId), res),
+          controller.findOne(
+            String(fixtures.document.id),
+            { user: { sub: fixtures.document.userId } },
+            res,
+          ),
         ).rejects.toThrow(NotFoundException);
 
         expect(res.set).toHaveBeenCalledTimes(0);
@@ -239,7 +282,8 @@ describe('DocumentsController', () => {
         expect(documentsService.findOne).toHaveBeenCalledTimes(1);
         expect(documentsService.findOne).toHaveBeenNthCalledWith(
           1,
-          fixtures.documentId,
+          fixtures.document.id,
+          fixtures.document.userId,
         );
       });
     });
@@ -247,16 +291,22 @@ describe('DocumentsController', () => {
 
   describe('remove()', () => {
     it('should call documentsService#remove() with received data and forward result', async () => {
-      fixtures.documentId = mocks.correctDocumentId;
+      fixtures.document = {
+        id: mocks.correctDocumentId,
+        userId: 4224,
+      };
 
       await expect(
-        controller.remove(String(fixtures.documentId)),
+        controller.remove(String(fixtures.document.id), {
+          user: { sub: fixtures.document.userId },
+        }),
       ).resolves.toBeUndefined();
 
       expect(documentsService.remove).toHaveBeenCalledTimes(1);
       expect(documentsService.remove).toHaveBeenNthCalledWith(
         1,
-        fixtures.documentId,
+        fixtures.document.id,
+        fixtures.document.userId,
       );
     });
 
