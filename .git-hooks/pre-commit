@@ -10,7 +10,31 @@ echo '  5 - add docs/openapi.yaml and logs/test.log to the commit (CI pipiline f
 echo 'if you do not want to run all of this, run git commit with --no-verify'
 
 npm run lint:check
+if [ $? -ne 0 ]; then
+  echo 'lint check failed, please fix the errors before committing'
+  exit 1
+fi
+
 npm run format:check
+if [ $? -ne 0 ]; then
+  echo 'format check failed, please fix the errors before committing'
+  exit 1
+fi
+
 npm run docs:openapi:generate
+if [ $? -ne 0 ]; then
+  echo 'OpenAPI spec generation failed, please fix the errors before committing'
+  exit 1
+fi
+
 npm run test:all:log
+if [ $? -ne 0 ]; then
+  echo 'tests failed, please fix the errors before committing'
+  exit 1
+fi
+
 git add docs/openapi.yaml logs/test.log
+if [ $? -ne 0 ]; then
+  echo 'failed to add docs/openapi.yaml and logs/test.log to the commit, please fix the errors before committing'
+  exit 1
+fi
