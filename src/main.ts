@@ -5,7 +5,7 @@ import { writeFile } from 'node:fs/promises';
 import * as yaml from 'yaml';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { cors: true });
   const config = new DocumentBuilder()
     .setTitle('Bodypace personal data server API')
     .setDescription(
