@@ -974,9 +974,7 @@ describe('DocumentsController (e2e)', () => {
     });
 
     // TODO: test that UPDATE / & /:id does not work
-    // TODO: test that /:id (UPDATE) does not work
-    // TODO: test that / (PATCH) does not work
-    // TODO: test that /:id (PATCH) does not work
+    // TODO: test that PATCH  / & /:id does not work
 
     describe('DELETE /', () => {
       describe.each([
