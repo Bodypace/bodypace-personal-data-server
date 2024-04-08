@@ -1,0 +1,9 @@
+.devcontainer/
+.git-hooks/
+.github/
+.vscode/
+dist/
+docs/
+logs/
+node_modules/
+docker/
