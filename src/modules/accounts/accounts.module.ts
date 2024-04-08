@@ -11,7 +11,8 @@ import { JwtModule } from '@nestjs/jwt';
       global: true,
       secret: process.env.BODYPACE_SERVER_JWT_SECRET,
       signOptions: {
-        expiresIn: '60s',
+        // TODO: this value is probably too long, it was set to 2 days for developer and free-beta convenience
+        expiresIn: '2 days',
       },
     }),
   ],
