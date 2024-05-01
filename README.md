@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://bodypace.org" target="_blank">
-    <img src="https://bodypace.org/favicon.ico" width="75"/>
+    <img src="https://bodypace.github.io/favicon.ico" width="75"/>
   </a>
 </p>
 
